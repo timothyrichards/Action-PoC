@@ -1,19 +1,41 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-public class hitDummy : MonoBehaviour {
+public class hitDummy : MonoBehaviour
+{
 
-	private Animator DummyAnimator;
+	public Enemy enemy;
 	public GameObject hay;
+	private Animator DummyAnimator;
 
-	void Start () {
+	void Start()
+	{
 		DummyAnimator = GetComponent<Animator>();
 	}
-	
-	void OnMouseDown()
+
+	void OnEnable()
+	{
+		enemy.DamageTaken += OnDamageTaken;
+	}
+
+	void OnDisable()
+	{
+		enemy.DamageTaken -= OnDamageTaken;
+	}
+
+	void OnDamageTaken()
 	{
 		DummyAnimator.SetTrigger("hit");
-		Instantiate(hay, transform.position + Vector3.up, Quaternion.identity);
+		GameObject hayInstance = Instantiate(hay, transform.position + Vector3.up, Quaternion.identity);
+		StartCoroutine(DestroyHayAfterDelay(hayInstance, 1f));
 	}
-	
+
+	IEnumerator DestroyHayAfterDelay(GameObject hayObj, float delay)
+	{
+		yield return new WaitForSeconds(delay);
+		if (hayObj != null)
+		{
+			Destroy(hayObj);
+		}
+	}
 }
