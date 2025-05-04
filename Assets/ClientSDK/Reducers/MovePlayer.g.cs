@@ -12,12 +12,12 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteReducers : RemoteBase
     {
-        public delegate void MovePlayerHandler(ReducerEventContext ctx, DbVector3 position, DbVector3 rotation);
+        public delegate void MovePlayerHandler(ReducerEventContext ctx, DbVector3 position, DbVector3 rotation, DbVector2 lookDirection, DbAnimationState animationState);
         public event MovePlayerHandler? OnMovePlayer;
 
-        public void MovePlayer(DbVector3 position, DbVector3 rotation)
+        public void MovePlayer(DbVector3 position, DbVector3 rotation, DbVector2 lookDirection, DbAnimationState animationState)
         {
-            conn.InternalCallReducer(new Reducer.MovePlayer(position, rotation), this.SetCallReducerFlags.MovePlayerFlags);
+            conn.InternalCallReducer(new Reducer.MovePlayer(position, rotation, lookDirection, animationState), this.SetCallReducerFlags.MovePlayerFlags);
         }
 
         public bool InvokeMovePlayer(ReducerEventContext ctx, Reducer.MovePlayer args)
@@ -26,7 +26,9 @@ namespace SpacetimeDB.Types
             OnMovePlayer(
                 ctx,
                 args.Position,
-                args.Rotation
+                args.Rotation,
+                args.LookDirection,
+                args.AnimationState
             );
             return true;
         }
@@ -42,20 +44,30 @@ namespace SpacetimeDB.Types
             public DbVector3 Position;
             [DataMember(Name = "rotation")]
             public DbVector3 Rotation;
+            [DataMember(Name = "look_direction")]
+            public DbVector2 LookDirection;
+            [DataMember(Name = "animation_state")]
+            public DbAnimationState AnimationState;
 
             public MovePlayer(
                 DbVector3 Position,
-                DbVector3 Rotation
+                DbVector3 Rotation,
+                DbVector2 LookDirection,
+                DbAnimationState AnimationState
             )
             {
                 this.Position = Position;
                 this.Rotation = Rotation;
+                this.LookDirection = LookDirection;
+                this.AnimationState = AnimationState;
             }
 
             public MovePlayer()
             {
                 this.Position = new();
                 this.Rotation = new();
+                this.LookDirection = new();
+                this.AnimationState = new();
             }
 
             string IReducerArgs.ReducerName => "move_player";

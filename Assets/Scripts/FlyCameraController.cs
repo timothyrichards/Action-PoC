@@ -1,0 +1,75 @@
+using UnityEngine;
+
+public class FlyCameraController : MonoBehaviour
+{
+    [Header("Movement Settings")]
+    [SerializeField] private float moveSpeed = 10f;
+    [SerializeField] private float fastMoveSpeed = 20f;
+    [SerializeField] private float mouseSensitivity = 2f;
+
+    private float rotationX = 0f;
+    private float rotationY = 0f;
+    private bool cursorLocked = true;
+
+    private void Start()
+    {
+        // Lock and hide the cursor at start
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void Update()
+    {
+        HandleMouseLook();
+        HandleMovement();
+        HandleCursorLock();
+    }
+
+    private void HandleMouseLook()
+    {
+        if (!cursorLocked) return;
+
+        // Get mouse input without smoothing
+        float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxisRaw("Mouse Y") * mouseSensitivity;
+
+        // Calculate camera rotation
+        rotationY += mouseX;
+        rotationX -= mouseY; // Subtract to invert the rotation
+        rotationX = Mathf.Clamp(rotationX, -90f, 90f); // Clamp vertical rotation
+
+        // Apply rotation
+        transform.rotation = Quaternion.Euler(rotationX, rotationY, 0);
+    }
+
+    private void HandleMovement()
+    {
+        if (!cursorLocked) return;
+
+        float currentMoveSpeed = Input.GetKey(KeyCode.LeftShift) ? fastMoveSpeed : moveSpeed;
+
+        // Get input for movement
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
+        float upDown = (Input.GetKey(KeyCode.Space) ? 1f : 0f) + (Input.GetKey(KeyCode.LeftControl) ? -1f : 0f);
+
+        // Calculate movement direction
+        Vector3 moveDirection = transform.right * horizontal +
+                              transform.forward * vertical +
+                              transform.up * upDown;
+
+        // Apply movement
+        transform.position += moveDirection * currentMoveSpeed * Time.deltaTime;
+    }
+
+    private void HandleCursorLock()
+    {
+        // Toggle cursor lock with LeftAlt key
+        if (Input.GetKeyDown(KeyCode.LeftAlt))
+        {
+            cursorLocked = !cursorLocked;
+            Cursor.lockState = cursorLocked ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !cursorLocked;
+        }
+    }
+}

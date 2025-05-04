@@ -43,7 +43,17 @@ public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
         }
     }
 
+    public void OnTriggerEnter(Collider other)
+    {
+        TriggerEnterHandler(other);
+    }
+
     public void OnHitboxTriggerEnter(Collider other)
+    {
+        TriggerEnterHandler(other);
+    }
+
+    public void TriggerEnterHandler(Collider other)
     {
         if (!hitboxActive) return;
 
@@ -55,7 +65,6 @@ public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
             {
                 enemy.TakeDamage(damage);
                 damagedEnemies.Add(enemy);
-                Debug.Log("Health: " + enemy.health);
             }
         }
     }

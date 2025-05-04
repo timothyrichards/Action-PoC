@@ -21,24 +21,34 @@ namespace SpacetimeDB.Types
         public DbVector3 Position;
         [DataMember(Name = "rotation")]
         public DbVector3 Rotation;
+        [DataMember(Name = "look_direction")]
+        public DbVector2 LookDirection;
+        [DataMember(Name = "animation_state")]
+        public DbAnimationState AnimationState;
 
         public Player(
             SpacetimeDB.Identity Identity,
             uint PlayerId,
             DbVector3 Position,
-            DbVector3 Rotation
+            DbVector3 Rotation,
+            DbVector2 LookDirection,
+            DbAnimationState AnimationState
         )
         {
             this.Identity = Identity;
             this.PlayerId = PlayerId;
             this.Position = Position;
             this.Rotation = Rotation;
+            this.LookDirection = LookDirection;
+            this.AnimationState = AnimationState;
         }
 
         public Player()
         {
             this.Position = new();
             this.Rotation = new();
+            this.LookDirection = new();
+            this.AnimationState = new();
         }
     }
 }

@@ -1,13 +1,14 @@
-using ThirdPersonCamera;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using SpacetimeDB.Types;
+using ThirdPersonCamera;
 
 [RequireComponent(typeof(CharacterController))]
 public class ThirdPersonController : MonoBehaviour
 {
     [Header("Runtime")]
     public FreeForm cameraFreeForm;
+    public AnimationController animController;
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
@@ -16,19 +17,10 @@ public class ThirdPersonController : MonoBehaviour
     public float gravity = -9.81f;
     public float acceleration = 10f;
     public float deceleration = 8f;
-    public float layerTransitionSpeed = 5f;
     public Transform cameraTransform;
-    public Animator animator;
 
-    [Header("Look Up/Down Settings")]
-    public Transform spineBone;
-    public float spineRotationMultiplier = 1.0f;
-    public float maxSpinePitch = 45f;
-    public float maxSpineYaw = 30f;
-
-    private int noMaskCombatLayerIndex;
-    private int maskCombatLayerIndex;
     private CharacterController controller;
+    private PlayerInputActions inputActions;
     private Vector2 moveInput;
     private Vector2 lookInput;
     private Vector3 velocity;
@@ -38,23 +30,10 @@ public class ThirdPersonController : MonoBehaviour
     private bool isGrounded;
     private bool jumpQueued;
 
-    private PlayerInputActions inputActions;
-    private readonly int isWalkingHash = Animator.StringToHash("Walking");
-    private readonly int horizontalHash = Animator.StringToHash("Horizontal");
-    private readonly int verticalHash = Animator.StringToHash("Vertical");
-    private readonly int isTurningHash = Animator.StringToHash("Turning");
-    private readonly int lookYawHash = Animator.StringToHash("LookYaw");
-    private readonly int meleeHash = Animator.StringToHash("Melee");
-    private readonly int jumpHash = Animator.StringToHash("Jump");
-
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
-        animator = GetComponentInChildren<Animator>();
-
-        noMaskCombatLayerIndex = animator.GetLayerIndex("No Mask Combat Layer");
-        maskCombatLayerIndex = animator.GetLayerIndex("Mask Combat Layer");
-
+        animController = GetComponentInChildren<AnimationController>();
         inputActions = new PlayerInputActions();
     }
 
@@ -84,7 +63,7 @@ public class ThirdPersonController : MonoBehaviour
     {
         moveInput = context.ReadValue<Vector2>();
         isMoving = moveInput.sqrMagnitude > 0.01f;
-        animator.SetBool(isWalkingHash, isMoving);
+        animController.SetWalkingState(isMoving);
     }
 
     private void OnJump(InputAction.CallbackContext context)
@@ -92,7 +71,7 @@ public class ThirdPersonController : MonoBehaviour
         if (context.ReadValue<float>() > 0.5f && isGrounded)
         {
             jumpQueued = true;
-            animator.SetTrigger(jumpHash);
+            animController.TriggerJump();
         }
     }
 
@@ -100,26 +79,24 @@ public class ThirdPersonController : MonoBehaviour
     {
         if (context.ReadValue<float>() > 0.5f)
         {
-            animator.SetTrigger(meleeHash);
+            animController.TriggerAttack();
         }
     }
 
     private void OnLook(InputAction.CallbackContext context)
     {
         lookInput = context.ReadValue<Vector2>();
+
         if (cameraFreeForm == null) return;
-        float cameraYaw = cameraFreeForm.transform.eulerAngles.y;
-        float characterYaw = transform.eulerAngles.y;
-        float yawDelta = Mathf.DeltaAngle(characterYaw, cameraYaw);
-        bool turning = Mathf.Abs(yawDelta) > maxSpineYaw;
-        animator.SetBool(isTurningHash, turning);
-        animator.SetFloat(lookYawHash, yawDelta < 0 ? 0f : 1f);
+
+        float yawDelta = CalculateYawDelta();
+        animController.SetTurningState(isTurning, yawDelta);
     }
 
     private void OnLookStop(InputAction.CallbackContext context)
     {
         lookInput = Vector2.zero;
-        animator.SetBool(isTurningHash, false);
+        animController.SetTurningState(false, 0f);
     }
 
     private void Start()
@@ -127,43 +104,75 @@ public class ThirdPersonController : MonoBehaviour
         Cursor.lockState = CursorLockMode.Locked;
     }
 
-    private void FixedUpdate()
-    {
-        if (!SpacetimeConnectionManager.IsConnected()) return;
-
-        SpacetimeConnectionManager.Conn.Reducers.MovePlayer(
-            new DbVector3(transform.position.x, transform.position.y, transform.position.z),
-            new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z)
-        );
-    }
-
     private void Update()
     {
         HandleLook();
         HandleMove();
-        UpdateAnimatorMovement();
-        UpdateCombatLayerWeight();
+
+        animController.SetMovementAnimation(moveInput);
+        animController.UpdateCombatLayerWeight(currentMovement.magnitude > 0.1f, isGrounded);
+
+        if (!ConnectionManager.IsConnected()) return;
+        // if (!ConnectionManager.Conn.Db.Player.Identity.Equals(ConnectionManager.LocalIdentity)) return;
+
+        float cameraPitch = cameraFreeForm.transform.eulerAngles.x;
+        float yawDelta = CalculateYawDelta();
+
+        ConnectionManager.Conn.Reducers.MovePlayer(
+            new DbVector3(transform.position.x, transform.position.y, transform.position.z),
+            new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z),
+            new DbVector2(cameraPitch, yawDelta),
+            new DbAnimationState(
+                moveInput.x,
+                moveInput.y,
+                yawDelta,
+                isMoving,
+                animController.IsTurning,
+                animController.IsJumping,
+                animController.IsAttacking
+            )
+        );
+    }
+
+    private float CalculateYawDelta()
+    {
+        if (cameraFreeForm == null) return 0f;
+
+        float cameraYaw = cameraFreeForm.transform.eulerAngles.y;
+        float characterYaw = transform.eulerAngles.y;
+
+        return Mathf.DeltaAngle(characterYaw, cameraYaw);
     }
 
     private void HandleLook()
     {
         if (cameraFreeForm == null) return;
 
-        float cameraYaw = cameraFreeForm.transform.eulerAngles.y;
-        float characterYaw = transform.eulerAngles.y;
-        float yawDelta = Mathf.DeltaAngle(characterYaw, cameraYaw);
-        isTurning = Mathf.Abs(yawDelta) > maxSpineYaw;
+        float yawDelta = CalculateYawDelta();
+        isTurning = Mathf.Abs(yawDelta) > animController.maxSpineYaw;
 
         // Always rotate to face the camera if moving
         if (isMoving || isTurning)
         {
-            // If not moving, clamp the rotation so the spine twist stays at maxSpineYaw
-            float targetYaw = isMoving ? cameraYaw : cameraYaw - Mathf.Sign(yawDelta) * maxSpineYaw;
-            float newYaw = Mathf.MoveTowardsAngle(characterYaw, targetYaw, rotationSpeed * Time.deltaTime * Mathf.Max(1f, Mathf.Abs(yawDelta - (isMoving ? 0f : maxSpineYaw))));
-            transform.rotation = Quaternion.Euler(0, newYaw, 0);
+            float targetYaw = isMoving
+                ? cameraFreeForm.transform.eulerAngles.y
+                : cameraFreeForm.transform.eulerAngles.y - Mathf.Sign(yawDelta) * animController.maxSpineYaw;
 
-            // Set LookYaw animator parameter only
-            animator.SetFloat(lookYawHash, yawDelta < 0 ? 0f : 1f);
+            float rotationMultiplier = Mathf.Max(1f, Mathf.Abs(yawDelta - (isMoving ? 0f : animController.maxSpineYaw)));
+            float newYaw = Mathf.MoveTowardsAngle(
+                transform.eulerAngles.y,
+                targetYaw,
+                rotationSpeed * Time.deltaTime * rotationMultiplier
+            );
+
+            transform.rotation = Quaternion.Euler(0, newYaw, 0);
+        }
+
+        // Update spine look
+        if (cameraFreeForm != null)
+        {
+            animController.cameraPitch = cameraFreeForm.transform.eulerAngles.x;
+            animController.yawDelta = CalculateYawDelta();
         }
     }
 
@@ -173,7 +182,7 @@ public class ThirdPersonController : MonoBehaviour
         if (isGrounded && velocity.y < 0)
             velocity.y = -2f;
 
-        Vector3 targetMovement = new Vector3(moveInput.x, 0, moveInput.y);
+        Vector3 targetMovement = new(moveInput.x, 0, moveInput.y);
         if (targetMovement.magnitude > 0.01f)
         {
             targetMovement = Quaternion.Euler(0, cameraTransform ? cameraTransform.eulerAngles.y : transform.eulerAngles.y, 0) * targetMovement;
@@ -191,70 +200,20 @@ public class ThirdPersonController : MonoBehaviour
             jumpQueued = false;
         }
 
-        if (!isGrounded)
-        {
-            velocity.y += gravity * Time.deltaTime;
-        }
-
-        animator.SetBool(isWalkingHash, currentMovement.magnitude > 0.1f);
         controller.Move(velocity * Time.deltaTime);
-    }
-
-    private void UpdateAnimatorMovement()
-    {
-        // Convert world space movement to local space relative to character's forward direction
-        Vector3 localMovement = transform.InverseTransformDirection(currentMovement);
-
-        // Normalize the movement values and apply them to the animator
-        float normalizedSpeed = moveSpeed > 0 ? 1f / moveSpeed : 1f;
-
-        // Clean up tiny values that are effectively zero
-        float threshold = 0.01f;
-        float horizontalValue = Mathf.Abs(localMovement.x) < threshold ? 0f : localMovement.x * normalizedSpeed;
-        float verticalValue = Mathf.Abs(localMovement.z) < threshold ? 0f : localMovement.z * normalizedSpeed;
-
-        animator.SetFloat(horizontalHash, horizontalValue, 0.05f, Time.deltaTime);
-        animator.SetFloat(verticalHash, verticalValue, 0.05f, Time.deltaTime);
-    }
-
-    private void UpdateCombatLayerWeight()
-    {
-        float targetWeight = (currentMovement.magnitude > 0.1f || !isGrounded) ? 1f : 0f;
-
-        float currentNoMaskWeight = animator.GetLayerWeight(noMaskCombatLayerIndex);
-        float currentMaskWeight = animator.GetLayerWeight(maskCombatLayerIndex);
-
-        float newNoMaskWeight = Mathf.Lerp(currentNoMaskWeight, 1f - targetWeight, layerTransitionSpeed * Time.deltaTime);
-        float newMaskWeight = Mathf.Lerp(currentMaskWeight, targetWeight, layerTransitionSpeed * Time.deltaTime);
-
-        animator.SetLayerWeight(noMaskCombatLayerIndex, newNoMaskWeight);
-        animator.SetLayerWeight(maskCombatLayerIndex, newMaskWeight);
     }
 
     private void LateUpdate()
     {
-        ApplySpineLook();
-    }
-
-    private void ApplySpineLook()
-    {
-        if (spineBone != null && cameraFreeForm != null)
+        if (cameraFreeForm != null)
         {
-            float cameraPitch = cameraFreeForm.transform.eulerAngles.x;
-            if (cameraPitch > 180f) cameraPitch -= 360f;
-            float clampedPitch = Mathf.Clamp(cameraPitch, -maxSpinePitch, maxSpinePitch);
+            animController.cameraPitch = cameraFreeForm.transform.eulerAngles.x;
+            animController.yawDelta = CalculateYawDelta();
+        }
 
-            // Calculate yaw difference between camera and character
-            float cameraYaw = cameraFreeForm.transform.eulerAngles.y;
-            float characterYaw = transform.eulerAngles.y;
-            float yawDelta = Mathf.DeltaAngle(characterYaw, cameraYaw);
-            float clampedYaw = Mathf.Clamp(yawDelta, -maxSpineYaw, maxSpineYaw);
-
-            // Only rotate on X (pitch), keep Y/Z as is
-            Vector3 localEuler = spineBone.localEulerAngles;
-            localEuler.x = clampedPitch * spineRotationMultiplier;
-            localEuler.y = clampedYaw;
-            spineBone.localEulerAngles = localEuler;
+        if (!isGrounded)
+        {
+            velocity.y += gravity * Time.deltaTime;
         }
     }
 }

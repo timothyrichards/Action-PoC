@@ -3,7 +3,7 @@ using SpacetimeDB;
 using SpacetimeDB.Types;
 using UnityEngine;
 
-public class SpacetimeConnectionManager : MonoBehaviour
+public class ConnectionManager : MonoBehaviour
 {
     const string SERVER_URL = "http://127.0.0.1:3000";
     const string MODULE_NAME = "action";
@@ -14,7 +14,7 @@ public class SpacetimeConnectionManager : MonoBehaviour
     public float borderThickness = 2;
     public Material borderMaterial;
 
-    public static SpacetimeConnectionManager Instance { get; private set; }
+    public static ConnectionManager Instance { get; private set; }
     public static Identity LocalIdentity { get; private set; }
     public static DbConnection Conn { get; private set; }
 
