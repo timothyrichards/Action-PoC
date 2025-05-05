@@ -15,7 +15,7 @@ namespace Scripts.Misc
             }
             else
             {
-                _target = GameObject.FindWithTag("PlayerCamera");
+                _target = Camera.main.gameObject;
             }
         }
     }

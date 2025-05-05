@@ -9,6 +9,7 @@ public class ThirdPersonController : MonoBehaviour
     [Header("Runtime")]
     public FreeForm cameraFreeForm;
     public AnimationController animController;
+    public BuildingSystem buildingSystem;
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
@@ -77,6 +78,8 @@ public class ThirdPersonController : MonoBehaviour
 
     private void OnAttack(InputAction.CallbackContext context)
     {
+        if (buildingSystem != null && buildingSystem.IsBuildingMode()) return;
+
         if (context.ReadValue<float>() > 0.5f)
         {
             animController.TriggerAttack();
@@ -85,6 +88,17 @@ public class ThirdPersonController : MonoBehaviour
 
     private void OnLook(InputAction.CallbackContext context)
     {
+        // Skip camera input if cursor is unlocked
+        if (Cursor.lockState != CursorLockMode.Locked)
+        {
+            if (cameraFreeForm != null)
+                cameraFreeForm.enabled = false;
+            return;
+        }
+
+        if (cameraFreeForm != null)
+            cameraFreeForm.enabled = true;
+
         lookInput = context.ReadValue<Vector2>();
 
         if (cameraFreeForm == null) return;
@@ -146,7 +160,7 @@ public class ThirdPersonController : MonoBehaviour
 
     private void HandleLook()
     {
-        if (cameraFreeForm == null) return;
+        if (cameraFreeForm == null || Cursor.lockState != CursorLockMode.Locked) return;
 
         float yawDelta = CalculateYawDelta();
         isTurning = Mathf.Abs(yawDelta) > animController.maxSpineYaw;

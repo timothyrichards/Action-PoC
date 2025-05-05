@@ -22,7 +22,6 @@ public class FlyCameraController : MonoBehaviour
     {
         HandleMouseLook();
         HandleMovement();
-        HandleCursorLock();
     }
 
     private void HandleMouseLook()
@@ -51,25 +50,12 @@ public class FlyCameraController : MonoBehaviour
         // Get input for movement
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-        float upDown = (Input.GetKey(KeyCode.Space) ? 1f : 0f) + (Input.GetKey(KeyCode.LeftControl) ? -1f : 0f);
 
         // Calculate movement direction
         Vector3 moveDirection = transform.right * horizontal +
-                              transform.forward * vertical +
-                              transform.up * upDown;
+                              transform.forward * vertical;
 
         // Apply movement
         transform.position += moveDirection * currentMoveSpeed * Time.deltaTime;
-    }
-
-    private void HandleCursorLock()
-    {
-        // Toggle cursor lock with LeftAlt key
-        if (Input.GetKeyDown(KeyCode.LeftAlt))
-        {
-            cursorLocked = !cursorLocked;
-            Cursor.lockState = cursorLocked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !cursorLocked;
-        }
     }
 }
