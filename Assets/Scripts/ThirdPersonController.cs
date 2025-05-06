@@ -35,6 +35,7 @@ public class ThirdPersonController : MonoBehaviour
     {
         controller = GetComponent<CharacterController>();
         animController = GetComponentInChildren<AnimationController>();
+        buildingSystem = FindAnyObjectByType<BuildingSystem>();
         inputActions = new PlayerInputActions();
     }
 

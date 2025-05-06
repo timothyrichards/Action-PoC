@@ -7,7 +7,7 @@ use spacetimedb::{ReducerContext, Table};
 mod types;
 
 // Local module imports
-use types::{DbVector3, DbVector2, DbAnimationState, WorldSpawn, world_spawn, Player, player};
+use types::{DbVector3, DbVector2, DbAnimationState, WorldSpawn, world_spawn, Player, player, DbBuildingPiece, building_piece, DbBuildingPieceType};
 
 #[spacetimedb::reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {
@@ -77,5 +77,40 @@ pub fn move_player(
         Ok(())
     } else {
         Err("Player not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn place_building_piece(
+    ctx: &ReducerContext,
+    piece_type: DbBuildingPieceType,
+    position: DbVector3,
+    rotation: DbVector3,
+) -> Result<(), String> {
+    ctx.db.building_piece().insert(DbBuildingPiece {
+        piece_id: 0, // This will be auto-incremented
+        owner: ctx.sender,
+        piece_type,
+        position,
+        rotation,
+    });
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn remove_building_piece(
+    ctx: &ReducerContext,
+    piece_id: u32,
+) -> Result<(), String> {
+    // Only allow removal if the sender is the owner
+    if let Some(piece) = ctx.db.building_piece().piece_id().find(&piece_id) {
+        if piece.owner == ctx.sender {
+            ctx.db.building_piece().piece_id().delete(&piece_id);
+            Ok(())
+        } else {
+            Err("Only the owner can remove their building pieces".to_string())
+        }
+    } else {
+        Err("Building piece not found".to_string())
     }
 }

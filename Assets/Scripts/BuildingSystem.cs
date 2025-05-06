@@ -3,24 +3,25 @@ using System.Collections.Generic;
 
 public class BuildingSystem : MonoBehaviour
 {
-    [Header("Prefabs")]
-    public GameObject[] foundationPrefabs;
-    public GameObject[] floorPrefabs;
-    public GameObject[] wallPrefabs;
-    public GameObject[] stairPrefabs;
-
-    [Header("Materials")]
-    public Material validMaterial;
-    public Material invalidMaterial;
+    [Header("Building Settings")]
+    public float rotationStep = 15f;
+    public float gridSize = 1.0f;
+    public float anchorDetectionRadius = 2f;
+    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
 
     [Header("Layers")]
     public LayerMask placementLayerMask;
     public LayerMask buildingLayerMask;
 
-    [Header("Grid")]
-    public float gridSize = 1.0f;
-    public float anchorDetectionRadius = 2f;
-    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
+    [Header("Materials")]
+    public Material validMaterial;
+    public Material invalidMaterial;
+
+    [Header("Prefabs")]
+    public GameObject[] foundationPrefabs;
+    public GameObject[] floorPrefabs;
+    public GameObject[] wallPrefabs;
+    public GameObject[] stairPrefabs;
 
     private GameObject previewInstance;
     private GameObject currentPrefab;
@@ -28,21 +29,21 @@ public class BuildingSystem : MonoBehaviour
     private BuildMode currentMode = BuildMode.None;
     private Camera cam;
     private float rotationY = 0f;
-    public float rotationStep = 15f;
-    private float originalZRotation = 0f;
     private GameObject highlightedObject;
-    private Dictionary<GameObject, Material[]> originalMaterials = new Dictionary<GameObject, Material[]>();
+    private Dictionary<GameObject, Material[]> originalMaterials = new();
     private int currentAnchorIndex = 0;
-    private List<Transform> currentAnchors = new List<Transform>();
+    private List<Transform> currentAnchors = new();
     private bool isEnabled = false;
     private Vector3 lastPreviewPosition;
     private bool manualAnchorOverride = false;
     private BuildingUI buildingUI;
+    private BuildingSync buildingSync;
 
     void Start()
     {
         cam = Camera.main;
         buildingUI = FindAnyObjectByType<BuildingUI>();
+        buildingSync = GetComponent<BuildingSync>();
         SetBuildMode(currentMode);
     }
 
@@ -282,10 +283,23 @@ public class BuildingSystem : MonoBehaviour
 
     private void PlacePiece()
     {
-        GameObject placed = Instantiate(currentPrefab, previewInstance.transform.position, previewInstance.transform.rotation);
+        // PlacePieceAtPosition(currentPrefab, previewInstance.transform.position, previewInstance.transform.rotation);
+
+        // Sync the placed piece over the network
+        BuildingPiece piece = currentPrefab.GetComponent<BuildingPiece>();
+        if (piece != null && buildingSync != null)
+        {
+            buildingSync.PlaceBuildingPiece(previewInstance, piece.pieceType);
+        }
+    }
+
+    public GameObject PlacePieceAtPosition(GameObject prefab, Vector3 position, Quaternion rotation)
+    {
+        GameObject placed = Instantiate(prefab, position, rotation);
         placed.transform.SetParent(transform);
         int buildingLayer = LayerMask.NameToLayer("Building");
         SetLayerRecursively(placed, buildingLayer);
+        return placed;
     }
 
     private void SetLayerRecursively(GameObject obj, int layer)
@@ -313,9 +327,16 @@ public class BuildingSystem : MonoBehaviour
             SetObjectMaterial(target, invalidMaterial);
             if (Input.GetMouseButtonDown(0))
             {
-                originalMaterials.Remove(target);
-                Destroy(target);
+                // Try to remove the piece through BuildingSync
+                BuildingPiece piece = target.GetComponent<BuildingPiece>();
+                if (piece != null && buildingSync != null)
+                {
+                    buildingSync.RemoveBuildingPiece(piece.PieceId);
+                }
+
+                // Don't destroy the object here - let BuildingSync handle it when the reducer succeeds
                 highlightedObject = null;
+                RestoreHighlightedMaterial();
             }
         }
     }

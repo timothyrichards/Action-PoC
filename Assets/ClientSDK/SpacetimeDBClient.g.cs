@@ -20,6 +20,7 @@ namespace SpacetimeDB.Types
     {
         public RemoteTables(DbConnection conn)
         {
+            AddTable(BuildingPiece = new(conn));
             AddTable(Player = new(conn));
             AddTable(WorldSpawn = new(conn));
         }
@@ -433,6 +434,8 @@ namespace SpacetimeDB.Types
                 "connect" => BSATNHelpers.Decode<Reducer.Connect>(encodedArgs),
                 "disconnect" => BSATNHelpers.Decode<Reducer.Disconnect>(encodedArgs),
                 "move_player" => BSATNHelpers.Decode<Reducer.MovePlayer>(encodedArgs),
+                "place_building_piece" => BSATNHelpers.Decode<Reducer.PlaceBuildingPiece>(encodedArgs),
+                "remove_building_piece" => BSATNHelpers.Decode<Reducer.RemoveBuildingPiece>(encodedArgs),
                 "set_spawn_point" => BSATNHelpers.Decode<Reducer.SetSpawnPoint>(encodedArgs),
                 var reducer => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
@@ -458,6 +461,8 @@ namespace SpacetimeDB.Types
                 Reducer.Connect args => Reducers.InvokeConnect(eventContext, args),
                 Reducer.Disconnect args => Reducers.InvokeDisconnect(eventContext, args),
                 Reducer.MovePlayer args => Reducers.InvokeMovePlayer(eventContext, args),
+                Reducer.PlaceBuildingPiece args => Reducers.InvokePlaceBuildingPiece(eventContext, args),
+                Reducer.RemoveBuildingPiece args => Reducers.InvokeRemoveBuildingPiece(eventContext, args),
                 Reducer.SetSpawnPoint args => Reducers.InvokeSetSpawnPoint(eventContext, args),
                 _ => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };

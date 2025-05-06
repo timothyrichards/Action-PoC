@@ -14,6 +14,14 @@ pub struct DbVector2 {
     pub y: f32,
 }
 
+#[spacetimedb::table(name = world_spawn, public)]
+pub struct WorldSpawn {
+    #[primary_key]
+    pub id: u32,
+    pub position: DbVector3,
+    pub rotation: DbVector3,
+}
+
 #[derive(SpacetimeType, Clone, Debug)]
 pub struct DbAnimationState {
     pub horizontal_movement: f32,
@@ -23,14 +31,6 @@ pub struct DbAnimationState {
     pub is_turning: bool,
     pub is_jumping: bool,
     pub is_attacking: bool,
-}
-
-#[spacetimedb::table(name = world_spawn, public)]
-pub struct WorldSpawn {
-    #[primary_key]
-    pub id: u32,
-    pub position: DbVector3,
-    pub rotation: DbVector3,
 }
 
 #[spacetimedb::table(name = player, public)]
@@ -44,4 +44,23 @@ pub struct Player {
     pub rotation: DbVector3,
     pub look_direction: DbVector2,
     pub animation_state: DbAnimationState,
+}
+
+#[derive(SpacetimeType, Clone, Debug)]
+pub enum DbBuildingPieceType {
+    Foundation,
+    Wall,
+    Floor,
+    Stair,
+}
+
+#[spacetimedb::table(name = building_piece, public)]
+pub struct DbBuildingPiece {
+    #[primary_key]
+    #[auto_inc]
+    pub piece_id: u32,
+    pub owner: Identity,
+    pub piece_type: DbBuildingPieceType,
+    pub position: DbVector3,
+    pub rotation: DbVector3,
 }
