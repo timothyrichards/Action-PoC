@@ -3,6 +3,24 @@ using System.Collections.Generic;
 
 public class BuildingSystem : MonoBehaviour
 {
+    private static BuildingSystem _instance;
+    public static BuildingSystem Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<BuildingSystem>();
+                if (_instance == null)
+                {
+                    GameObject go = new("BuildingSystem");
+                    _instance = go.AddComponent<BuildingSystem>();
+                }
+            }
+            return _instance;
+        }
+    }
+
     [Header("Building Settings")]
     public float rotationStep = 15f;
     public float gridSize = 1.0f;
@@ -38,6 +56,17 @@ public class BuildingSystem : MonoBehaviour
     private bool manualAnchorOverride = false;
     private BuildingUI buildingUI;
     private BuildingSync buildingSync;
+
+    private void Awake()
+    {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
 
     void Start()
     {

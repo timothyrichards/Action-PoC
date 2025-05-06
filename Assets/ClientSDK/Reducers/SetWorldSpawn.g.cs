@@ -12,18 +12,18 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteReducers : RemoteBase
     {
-        public delegate void SetSpawnPointHandler(ReducerEventContext ctx, uint id, float x, float y, float z, float rx, float ry, float rz);
-        public event SetSpawnPointHandler? OnSetSpawnPoint;
+        public delegate void SetWorldSpawnHandler(ReducerEventContext ctx, uint id, float x, float y, float z, float rx, float ry, float rz);
+        public event SetWorldSpawnHandler? OnSetWorldSpawn;
 
-        public void SetSpawnPoint(uint id, float x, float y, float z, float rx, float ry, float rz)
+        public void SetWorldSpawn(uint id, float x, float y, float z, float rx, float ry, float rz)
         {
-            conn.InternalCallReducer(new Reducer.SetSpawnPoint(id, x, y, z, rx, ry, rz), this.SetCallReducerFlags.SetSpawnPointFlags);
+            conn.InternalCallReducer(new Reducer.SetWorldSpawn(id, x, y, z, rx, ry, rz), this.SetCallReducerFlags.SetWorldSpawnFlags);
         }
 
-        public bool InvokeSetSpawnPoint(ReducerEventContext ctx, Reducer.SetSpawnPoint args)
+        public bool InvokeSetWorldSpawn(ReducerEventContext ctx, Reducer.SetWorldSpawn args)
         {
-            if (OnSetSpawnPoint == null) return false;
-            OnSetSpawnPoint(
+            if (OnSetWorldSpawn == null) return false;
+            OnSetWorldSpawn(
                 ctx,
                 args.Id,
                 args.X,
@@ -41,7 +41,7 @@ namespace SpacetimeDB.Types
     {
         [SpacetimeDB.Type]
         [DataContract]
-        public sealed partial class SetSpawnPoint : Reducer, IReducerArgs
+        public sealed partial class SetWorldSpawn : Reducer, IReducerArgs
         {
             [DataMember(Name = "id")]
             public uint Id;
@@ -58,7 +58,7 @@ namespace SpacetimeDB.Types
             [DataMember(Name = "rz")]
             public float Rz;
 
-            public SetSpawnPoint(
+            public SetWorldSpawn(
                 uint Id,
                 float X,
                 float Y,
@@ -77,17 +77,17 @@ namespace SpacetimeDB.Types
                 this.Rz = Rz;
             }
 
-            public SetSpawnPoint()
+            public SetWorldSpawn()
             {
             }
 
-            string IReducerArgs.ReducerName => "set_spawn_point";
+            string IReducerArgs.ReducerName => "set_world_spawn";
         }
     }
 
     public sealed partial class SetReducerFlags
     {
-        internal CallReducerFlags SetSpawnPointFlags;
-        public void SetSpawnPoint(CallReducerFlags flags) => SetSpawnPointFlags = flags;
+        internal CallReducerFlags SetWorldSpawnFlags;
+        public void SetWorldSpawn(CallReducerFlags flags) => SetWorldSpawnFlags = flags;
     }
 }

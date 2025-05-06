@@ -4,7 +4,7 @@ using System.Collections;
 public class hitDummy : MonoBehaviour
 {
 
-	public Enemy enemy;
+	public EnemyEntity enemy;
 	public GameObject hay;
 	private Animator DummyAnimator;
 
@@ -15,15 +15,15 @@ public class hitDummy : MonoBehaviour
 
 	void OnEnable()
 	{
-		enemy.DamageTaken += OnDamageTaken;
+		enemy.OnHealthChanged += OnHealthChanged;
 	}
 
 	void OnDisable()
 	{
-		enemy.DamageTaken -= OnDamageTaken;
+		enemy.OnHealthChanged -= OnHealthChanged;
 	}
 
-	void OnDamageTaken()
+	void OnHealthChanged(float health)
 	{
 		DummyAnimator.SetTrigger("hit");
 		GameObject hayInstance = Instantiate(hay, transform.position + Vector3.up, Quaternion.identity);

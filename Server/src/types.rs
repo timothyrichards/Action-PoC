@@ -44,6 +44,8 @@ pub struct Player {
     pub rotation: DbVector3,
     pub look_direction: DbVector2,
     pub animation_state: DbAnimationState,
+    pub health: f32,
+    pub max_health: f32,
 }
 
 #[derive(SpacetimeType, Clone, Debug)]

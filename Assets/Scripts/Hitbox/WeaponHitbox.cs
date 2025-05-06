@@ -3,14 +3,17 @@ using System.Collections.Generic;
 
 public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
 {
+    public Entity wielder;
     public float damage = 25f;
-    public LayerMask enemyLayer;
+    public LayerMask entityLayer;
     public List<Collider> hitboxColliders = new();
     private bool hitboxActive = false;
-    private HashSet<Enemy> damagedEnemies = new();
+    private HashSet<IDamageable> damagedEntities = new();
 
     private void Awake()
     {
+        wielder = GetComponentInParent<Entity>();
+
         // Optionally auto-populate hitboxColliders with all child colliders if empty
         if (hitboxColliders.Count == 0)
         {
@@ -27,7 +30,7 @@ public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
     public void ActivateHitbox()
     {
         hitboxActive = true;
-        damagedEnemies.Clear();
+        damagedEntities.Clear();
         foreach (var col in hitboxColliders)
         {
             col.enabled = true;
@@ -57,14 +60,16 @@ public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
     {
         if (!hitboxActive) return;
 
-        // Only hit enemies
-        if (((1 << other.gameObject.layer) & enemyLayer) != 0)
+        if (other.gameObject == wielder.gameObject) return;
+
+        // Only entities on the designated entity layer
+        if (((1 << other.gameObject.layer) & entityLayer) != 0)
         {
-            Enemy enemy = other.GetComponent<Enemy>();
-            if (enemy != null && !damagedEnemies.Contains(enemy))
+            Entity entity = other.GetComponent<Entity>();
+            if (entity != null && !damagedEntities.Contains(entity))
             {
-                enemy.TakeDamage(damage);
-                damagedEnemies.Add(enemy);
+                entity.TakeDamage(damage);
+                damagedEntities.Add(entity);
             }
         }
     }

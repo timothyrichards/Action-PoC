@@ -11,19 +11,22 @@ kanban-plugin: board
 
 ## In Progress
 
-- [ ] Network enabled combat
 
 
 ## Done
 
-- [ ] Network enabled building
-- [ ] Network enabled movement
-- [ ] Basic building implementation
-- [ ] Basic combat implementation
+
+
+***
+
+## Archive
+
 - [ ] Basic 3rd person movement implementation
-
-
-
+- [ ] Basic combat implementation
+- [ ] Basic building implementation
+- [ ] Network enabled movement
+- [ ] Network enabled combat
+- [ ] Network enabled building
 
 %% kanban:settings
 ```

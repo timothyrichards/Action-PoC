@@ -1,15 +1,12 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using SpacetimeDB.Types;
-using ThirdPersonCamera;
 
 [RequireComponent(typeof(CharacterController))]
 public class ThirdPersonController : MonoBehaviour
 {
     [Header("Runtime")]
-    public FreeForm cameraFreeForm;
-    public AnimationController animController;
-    public BuildingSystem buildingSystem;
+    public PlayerEntity playerEntity;
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
@@ -33,9 +30,8 @@ public class ThirdPersonController : MonoBehaviour
 
     private void Awake()
     {
+        playerEntity = GetComponent<PlayerEntity>();
         controller = GetComponent<CharacterController>();
-        animController = GetComponentInChildren<AnimationController>();
-        buildingSystem = FindAnyObjectByType<BuildingSystem>();
         inputActions = new PlayerInputActions();
     }
 
@@ -65,7 +61,7 @@ public class ThirdPersonController : MonoBehaviour
     {
         moveInput = context.ReadValue<Vector2>();
         isMoving = moveInput.sqrMagnitude > 0.01f;
-        animController.SetWalkingState(isMoving);
+        playerEntity.animController.SetWalkingState(isMoving);
     }
 
     private void OnJump(InputAction.CallbackContext context)
@@ -73,17 +69,17 @@ public class ThirdPersonController : MonoBehaviour
         if (context.ReadValue<float>() > 0.5f && isGrounded)
         {
             jumpQueued = true;
-            animController.TriggerJump();
+            playerEntity.animController.TriggerJump();
         }
     }
 
     private void OnAttack(InputAction.CallbackContext context)
     {
-        if (buildingSystem != null && buildingSystem.IsBuildingMode()) return;
+        if (BuildingSystem.Instance != null && BuildingSystem.Instance.IsBuildingMode()) return;
 
         if (context.ReadValue<float>() > 0.5f)
         {
-            animController.TriggerAttack();
+            playerEntity.animController.TriggerAttack();
         }
     }
 
@@ -92,26 +88,26 @@ public class ThirdPersonController : MonoBehaviour
         // Skip camera input if cursor is unlocked
         if (Cursor.lockState != CursorLockMode.Locked)
         {
-            if (cameraFreeForm != null)
-                cameraFreeForm.enabled = false;
+            if (playerEntity.CameraFreeForm != null)
+                playerEntity.CameraFreeForm.enabled = false;
             return;
         }
 
-        if (cameraFreeForm != null)
-            cameraFreeForm.enabled = true;
+        if (playerEntity.CameraFreeForm != null)
+            playerEntity.CameraFreeForm.enabled = true;
 
         lookInput = context.ReadValue<Vector2>();
 
-        if (cameraFreeForm == null) return;
+        if (playerEntity.CameraFreeForm == null) return;
 
         float yawDelta = CalculateYawDelta();
-        animController.SetTurningState(isTurning, yawDelta);
+        playerEntity.animController.SetTurningState(isTurning, yawDelta);
     }
 
     private void OnLookStop(InputAction.CallbackContext context)
     {
         lookInput = Vector2.zero;
-        animController.SetTurningState(false, 0f);
+        playerEntity.animController.SetTurningState(false, 0f);
     }
 
     private void Start()
@@ -124,13 +120,13 @@ public class ThirdPersonController : MonoBehaviour
         HandleLook();
         HandleMove();
 
-        animController.SetMovementAnimation(moveInput);
-        animController.UpdateCombatLayerWeight(currentMovement.magnitude > 0.1f, isGrounded);
+        playerEntity.animController.SetMovementAnimation(moveInput);
+        playerEntity.animController.UpdateCombatLayerWeight(currentMovement.magnitude > 0.1f, isGrounded);
 
         if (!ConnectionManager.IsConnected()) return;
         // if (!ConnectionManager.Conn.Db.Player.Identity.Equals(ConnectionManager.LocalIdentity)) return;
 
-        float cameraPitch = cameraFreeForm.transform.eulerAngles.x;
+        float cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
         float yawDelta = CalculateYawDelta();
 
         ConnectionManager.Conn.Reducers.MovePlayer(
@@ -142,18 +138,18 @@ public class ThirdPersonController : MonoBehaviour
                 moveInput.y,
                 yawDelta,
                 isMoving,
-                animController.IsTurning,
-                animController.IsJumping,
-                animController.IsAttacking
+                playerEntity.animController.IsTurning,
+                playerEntity.animController.IsJumping,
+                playerEntity.animController.IsAttacking
             )
         );
     }
 
     private float CalculateYawDelta()
     {
-        if (cameraFreeForm == null) return 0f;
+        if (playerEntity.CameraFreeForm == null) return 0f;
 
-        float cameraYaw = cameraFreeForm.transform.eulerAngles.y;
+        float cameraYaw = playerEntity.CameraFreeForm.transform.eulerAngles.y;
         float characterYaw = transform.eulerAngles.y;
 
         return Mathf.DeltaAngle(characterYaw, cameraYaw);
@@ -161,19 +157,19 @@ public class ThirdPersonController : MonoBehaviour
 
     private void HandleLook()
     {
-        if (cameraFreeForm == null || Cursor.lockState != CursorLockMode.Locked) return;
+        if (playerEntity.CameraFreeForm == null || Cursor.lockState != CursorLockMode.Locked) return;
 
         float yawDelta = CalculateYawDelta();
-        isTurning = Mathf.Abs(yawDelta) > animController.maxSpineYaw;
+        isTurning = Mathf.Abs(yawDelta) > playerEntity.animController.maxSpineYaw;
 
         // Always rotate to face the camera if moving
         if (isMoving || isTurning)
         {
             float targetYaw = isMoving
-                ? cameraFreeForm.transform.eulerAngles.y
-                : cameraFreeForm.transform.eulerAngles.y - Mathf.Sign(yawDelta) * animController.maxSpineYaw;
+                ? playerEntity.CameraFreeForm.transform.eulerAngles.y
+                : playerEntity.CameraFreeForm.transform.eulerAngles.y - Mathf.Sign(yawDelta) * playerEntity.animController.maxSpineYaw;
 
-            float rotationMultiplier = Mathf.Max(1f, Mathf.Abs(yawDelta - (isMoving ? 0f : animController.maxSpineYaw)));
+            float rotationMultiplier = Mathf.Max(1f, Mathf.Abs(yawDelta - (isMoving ? 0f : playerEntity.animController.maxSpineYaw)));
             float newYaw = Mathf.MoveTowardsAngle(
                 transform.eulerAngles.y,
                 targetYaw,
@@ -184,10 +180,10 @@ public class ThirdPersonController : MonoBehaviour
         }
 
         // Update spine look
-        if (cameraFreeForm != null)
+        if (playerEntity.CameraFreeForm != null)
         {
-            animController.cameraPitch = cameraFreeForm.transform.eulerAngles.x;
-            animController.yawDelta = CalculateYawDelta();
+            playerEntity.animController.cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
+            playerEntity.animController.yawDelta = CalculateYawDelta();
         }
     }
 
@@ -220,10 +216,10 @@ public class ThirdPersonController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (cameraFreeForm != null)
+        if (playerEntity.CameraFreeForm != null)
         {
-            animController.cameraPitch = cameraFreeForm.transform.eulerAngles.x;
-            animController.yawDelta = CalculateYawDelta();
+            playerEntity.animController.cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
+            playerEntity.animController.yawDelta = CalculateYawDelta();
         }
 
         if (!isGrounded)

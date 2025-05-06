@@ -25,6 +25,10 @@ namespace SpacetimeDB.Types
         public DbVector2 LookDirection;
         [DataMember(Name = "animation_state")]
         public DbAnimationState AnimationState;
+        [DataMember(Name = "health")]
+        public float Health;
+        [DataMember(Name = "max_health")]
+        public float MaxHealth;
 
         public Player(
             SpacetimeDB.Identity Identity,
@@ -32,7 +36,9 @@ namespace SpacetimeDB.Types
             DbVector3 Position,
             DbVector3 Rotation,
             DbVector2 LookDirection,
-            DbAnimationState AnimationState
+            DbAnimationState AnimationState,
+            float Health,
+            float MaxHealth
         )
         {
             this.Identity = Identity;
@@ -41,6 +47,8 @@ namespace SpacetimeDB.Types
             this.Rotation = Rotation;
             this.LookDirection = LookDirection;
             this.AnimationState = AnimationState;
+            this.Health = Health;
+            this.MaxHealth = MaxHealth;
         }
 
         public Player()

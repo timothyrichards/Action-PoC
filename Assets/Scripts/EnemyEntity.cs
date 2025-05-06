@@ -1,34 +1,20 @@
 using UnityEngine;
 using System.Collections;
-using System;
 
-public class Enemy : MonoBehaviour
+public class EnemyEntity : Entity
 {
-    public float health = 100f;
     public float fallDuration = 3f;
+
     private bool isDown = false;
-    private float maxHealth;
 
-    public Action DamageTaken;
-
-    void Awake()
-    {
-        maxHealth = health;
-    }
-
-    public void TakeDamage(float amount)
+    public override void TakeDamage(float amount)
     {
         if (isDown) return;
 
-        health -= amount;
-        DamageTaken?.Invoke();
-        if (health <= 0f)
-        {
-            Die();
-        }
+        base.TakeDamage(amount);
     }
 
-    void Die()
+    public override void Die()
     {
         StartCoroutine(FallAndRecover());
     }
