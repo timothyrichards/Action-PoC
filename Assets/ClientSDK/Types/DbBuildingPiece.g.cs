@@ -17,6 +17,8 @@ namespace SpacetimeDB.Types
         public uint PieceId;
         [DataMember(Name = "owner")]
         public SpacetimeDB.Identity Owner;
+        [DataMember(Name = "index")]
+        public uint Index;
         [DataMember(Name = "piece_type")]
         public DbBuildingPieceType PieceType;
         [DataMember(Name = "position")]
@@ -27,6 +29,7 @@ namespace SpacetimeDB.Types
         public DbBuildingPiece(
             uint PieceId,
             SpacetimeDB.Identity Owner,
+            uint Index,
             DbBuildingPieceType PieceType,
             DbVector3 Position,
             DbVector3 Rotation
@@ -34,6 +37,7 @@ namespace SpacetimeDB.Types
         {
             this.PieceId = PieceId;
             this.Owner = Owner;
+            this.Index = Index;
             this.PieceType = PieceType;
             this.Position = Position;
             this.Rotation = Rotation;

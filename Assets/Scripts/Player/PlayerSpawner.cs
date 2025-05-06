@@ -62,6 +62,9 @@ public class PlayerSpawner : MonoBehaviour
 
     private void HandlePlayerJoined(EventContext context, Player player)
     {
+        if (!player.Online)
+            return;
+
         if (playerObjects.ContainsKey(player.Identity))
             return;
 

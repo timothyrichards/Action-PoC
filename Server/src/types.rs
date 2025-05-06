@@ -40,6 +40,7 @@ pub struct Player {
     #[unique]
     #[auto_inc]
     pub player_id: u32,
+    pub online: bool,
     pub position: DbVector3,
     pub rotation: DbVector3,
     pub look_direction: DbVector2,
@@ -62,6 +63,7 @@ pub struct DbBuildingPiece {
     #[auto_inc]
     pub piece_id: u32,
     pub owner: Identity,
+    pub index: u32,
     pub piece_type: DbBuildingPieceType,
     pub position: DbVector3,
     pub rotation: DbVector3,

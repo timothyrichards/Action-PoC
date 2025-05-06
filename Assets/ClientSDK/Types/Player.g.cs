@@ -17,6 +17,8 @@ namespace SpacetimeDB.Types
         public SpacetimeDB.Identity Identity;
         [DataMember(Name = "player_id")]
         public uint PlayerId;
+        [DataMember(Name = "online")]
+        public bool Online;
         [DataMember(Name = "position")]
         public DbVector3 Position;
         [DataMember(Name = "rotation")]
@@ -33,6 +35,7 @@ namespace SpacetimeDB.Types
         public Player(
             SpacetimeDB.Identity Identity,
             uint PlayerId,
+            bool Online,
             DbVector3 Position,
             DbVector3 Rotation,
             DbVector2 LookDirection,
@@ -43,6 +46,7 @@ namespace SpacetimeDB.Types
         {
             this.Identity = Identity;
             this.PlayerId = PlayerId;
+            this.Online = Online;
             this.Position = Position;
             this.Rotation = Rotation;
             this.LookDirection = LookDirection;

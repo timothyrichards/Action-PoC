@@ -1,14 +1,14 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class BuildingUI : MonoBehaviour
 {
+    [Header("Runtime")]
+    public GameObject buttonPrefab;
+
     [Header("UI References")]
     public GameObject buildingPanel;
-    public Button foundationButton;
-    public Button floorButton;
-    public Button wallButton;
-    public Button stairsButton;
     public Button deleteButton;
 
     private BuildingSystem buildingSystem;
@@ -47,20 +47,43 @@ public class BuildingUI : MonoBehaviour
 
     private void SetupButtons()
     {
-        if (foundationButton != null)
-            foundationButton.onClick.AddListener(SwitchToFoundation);
+        for (int i = 0; i < buildingSystem.foundationPrefabs.Length; i++)
+        {
+            var index = i;
+            var button = Instantiate(buttonPrefab, buildingPanel.transform);
+            button.name = buildingSystem.foundationPrefabs[i].name;
+            button.GetComponentInChildren<TextMeshProUGUI>().text = buildingSystem.foundationPrefabs[i].name;
+            button.GetComponent<Button>().onClick.AddListener(() => SwitchToFoundation(index));
+        }
 
-        if (floorButton != null)
-            floorButton.onClick.AddListener(SwitchToFloor);
+        for (int i = 0; i < buildingSystem.floorPrefabs.Length; i++)
+        {
+            var index = i;
+            var button = Instantiate(buttonPrefab, buildingPanel.transform);
+            button.name = buildingSystem.floorPrefabs[i].name;
+            button.GetComponentInChildren<TextMeshProUGUI>().text = buildingSystem.floorPrefabs[i].name;
+            button.GetComponent<Button>().onClick.AddListener(() => SwitchToFloor(index));
+        }
 
-        if (wallButton != null)
-            wallButton.onClick.AddListener(SwitchToWall);
+        for (int i = 0; i < buildingSystem.wallPrefabs.Length; i++)
+        {
+            var index = i;
+            var button = Instantiate(buttonPrefab, buildingPanel.transform);
+            button.name = buildingSystem.wallPrefabs[i].name;
+            button.GetComponentInChildren<TextMeshProUGUI>().text = buildingSystem.wallPrefabs[i].name;
+            button.GetComponent<Button>().onClick.AddListener(() => SwitchToWall(index));
+        }
 
-        if (stairsButton != null)
-            stairsButton.onClick.AddListener(SwitchToStairs);
+        for (int i = 0; i < buildingSystem.stairPrefabs.Length; i++)
+        {
+            var index = i;
+            var button = Instantiate(buttonPrefab, buildingPanel.transform);
+            button.name = buildingSystem.stairPrefabs[i].name;
+            button.GetComponentInChildren<TextMeshProUGUI>().text = buildingSystem.stairPrefabs[i].name;
+            button.GetComponent<Button>().onClick.AddListener(() => SwitchToStairs(index));
+        }
 
-        if (deleteButton != null)
-            deleteButton.onClick.AddListener(SwitchToDelete);
+        deleteButton?.onClick.AddListener(SwitchToDelete);
     }
 
     private void ToggleBuildingPanel(bool overrideState = false)
@@ -90,24 +113,24 @@ public class BuildingUI : MonoBehaviour
         Cursor.visible = isPanelVisible;
     }
 
-    public void SwitchToFoundation()
+    public void SwitchToFoundation(int index)
     {
-        SwitchToBuildMode(BuildingSystem.BuildMode.Foundation);
+        SwitchToBuildMode(BuildingSystem.BuildMode.Foundation, index);
     }
 
-    public void SwitchToFloor()
+    public void SwitchToFloor(int index)
     {
-        SwitchToBuildMode(BuildingSystem.BuildMode.Floor);
+        SwitchToBuildMode(BuildingSystem.BuildMode.Floor, index);
     }
 
-    public void SwitchToWall()
+    public void SwitchToWall(int index)
     {
-        SwitchToBuildMode(BuildingSystem.BuildMode.Wall);
+        SwitchToBuildMode(BuildingSystem.BuildMode.Wall, index);
     }
 
-    public void SwitchToStairs()
+    public void SwitchToStairs(int index)
     {
-        SwitchToBuildMode(BuildingSystem.BuildMode.Stairs);
+        SwitchToBuildMode(BuildingSystem.BuildMode.Stairs, index);
     }
 
     public void SwitchToDelete()
@@ -115,9 +138,9 @@ public class BuildingUI : MonoBehaviour
         SwitchToBuildMode(BuildingSystem.BuildMode.Delete);
     }
 
-    public void SwitchToBuildMode(BuildingSystem.BuildMode mode)
+    public void SwitchToBuildMode(BuildingSystem.BuildMode mode, int index = 0)
     {
-        buildingSystem.SwitchMode(mode);
+        buildingSystem.SwitchMode(mode, index);
         CloseBuildingPanel();
     }
 }

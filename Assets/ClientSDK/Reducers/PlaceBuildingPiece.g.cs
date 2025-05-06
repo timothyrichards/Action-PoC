@@ -12,12 +12,12 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteReducers : RemoteBase
     {
-        public delegate void PlaceBuildingPieceHandler(ReducerEventContext ctx, DbBuildingPieceType pieceType, DbVector3 position, DbVector3 rotation);
+        public delegate void PlaceBuildingPieceHandler(ReducerEventContext ctx, uint index, DbBuildingPieceType pieceType, DbVector3 position, DbVector3 rotation);
         public event PlaceBuildingPieceHandler? OnPlaceBuildingPiece;
 
-        public void PlaceBuildingPiece(DbBuildingPieceType pieceType, DbVector3 position, DbVector3 rotation)
+        public void PlaceBuildingPiece(uint index, DbBuildingPieceType pieceType, DbVector3 position, DbVector3 rotation)
         {
-            conn.InternalCallReducer(new Reducer.PlaceBuildingPiece(pieceType, position, rotation), this.SetCallReducerFlags.PlaceBuildingPieceFlags);
+            conn.InternalCallReducer(new Reducer.PlaceBuildingPiece(index, pieceType, position, rotation), this.SetCallReducerFlags.PlaceBuildingPieceFlags);
         }
 
         public bool InvokePlaceBuildingPiece(ReducerEventContext ctx, Reducer.PlaceBuildingPiece args)
@@ -25,6 +25,7 @@ namespace SpacetimeDB.Types
             if (OnPlaceBuildingPiece == null) return false;
             OnPlaceBuildingPiece(
                 ctx,
+                args.Index,
                 args.PieceType,
                 args.Position,
                 args.Rotation
@@ -39,6 +40,8 @@ namespace SpacetimeDB.Types
         [DataContract]
         public sealed partial class PlaceBuildingPiece : Reducer, IReducerArgs
         {
+            [DataMember(Name = "index")]
+            public uint Index;
             [DataMember(Name = "piece_type")]
             public DbBuildingPieceType PieceType;
             [DataMember(Name = "position")]
@@ -47,11 +50,13 @@ namespace SpacetimeDB.Types
             public DbVector3 Rotation;
 
             public PlaceBuildingPiece(
+                uint Index,
                 DbBuildingPieceType PieceType,
                 DbVector3 Position,
                 DbVector3 Rotation
             )
             {
+                this.Index = Index;
                 this.PieceType = PieceType;
                 this.Position = Position;
                 this.Rotation = Rotation;

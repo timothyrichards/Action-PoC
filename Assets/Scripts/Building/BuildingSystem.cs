@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using Unity.VisualScripting;
+using System;
 
 public class BuildingSystem : MonoBehaviour
 {
@@ -41,21 +43,23 @@ public class BuildingSystem : MonoBehaviour
     public GameObject[] wallPrefabs;
     public GameObject[] stairPrefabs;
 
+    private BuildingUI buildingUI;
+    private BuildingSync buildingSync;
+    private Camera cam;
+    private BuildMode currentMode = BuildMode.None;
     private GameObject previewInstance;
     private GameObject currentPrefab;
-    private bool isValidPlacement = false;
-    private BuildMode currentMode = BuildMode.None;
-    private Camera cam;
-    private float rotationY = 0f;
     private GameObject highlightedObject;
+    private bool isValidPlacement = false;
+    private float rotationY = 0f;
     private Dictionary<GameObject, Material[]> originalMaterials = new();
     private int currentAnchorIndex = 0;
     private List<Transform> currentAnchors = new();
     private bool isEnabled = false;
     private Vector3 lastPreviewPosition;
     private bool manualAnchorOverride = false;
-    private BuildingUI buildingUI;
-    private BuildingSync buildingSync;
+    private Transform lastTargetAnchor = null;
+    private Vector3 lastHitNormal = Vector3.up;
 
     private void Awake()
     {
@@ -139,21 +143,21 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
-    public void SwitchMode(BuildMode mode)
+    public void SwitchMode(BuildMode mode, int index = 0)
     {
-        if (currentMode == mode) return;
         currentMode = mode;
-        SetBuildMode(mode);
+        SetBuildMode(mode, index);
     }
 
-    private void SetBuildMode(BuildMode mode)
+    private void SetBuildMode(BuildMode mode, int index = 0)
     {
+        Debug.Log("Setting build mode to " + mode + " with index " + index);
         currentPrefab = mode switch
         {
-            BuildMode.Foundation => foundationPrefabs[0],
-            BuildMode.Floor => floorPrefabs[0],
-            BuildMode.Wall => wallPrefabs[0],
-            BuildMode.Stairs => stairPrefabs[0],
+            BuildMode.Foundation => foundationPrefabs[index],
+            BuildMode.Floor => floorPrefabs[index],
+            BuildMode.Wall => wallPrefabs[index],
+            BuildMode.Stairs => stairPrefabs[index],
             _ => null
         };
 
@@ -164,10 +168,11 @@ public class BuildingSystem : MonoBehaviour
         if (currentPrefab != null && mode != BuildMode.Delete)
         {
             previewInstance = Instantiate(currentPrefab);
-            // Disable all colliders on the preview
             foreach (Collider col in previewInstance.GetComponentsInChildren<Collider>())
             {
-                col.enabled = false;
+                var rigidbody = col.AddComponent<Rigidbody>();
+                rigidbody.isKinematic = true;
+                col.isTrigger = true;
             }
 
             SetPreviewMaterial(invalidMaterial);
@@ -224,19 +229,25 @@ public class BuildingSystem : MonoBehaviour
         Vector3 originalRotation = currentPrefab.transform.rotation.eulerAngles;
         Quaternion rotation = Quaternion.Euler(originalRotation.x, rotationY, originalRotation.z);
         bool snappedToAnchor = false;
+        BuildingPiece hitPiece = null;
+        Vector3 hitPoint = Vector3.zero;
+        Vector3 hitNormal = Vector3.up;
+        Transform closestAnchor = null;
 
         if (Physics.Raycast(ray, out RaycastHit hitBuilding, 100f, buildingLayerMask))
         {
-            BuildingPiece hitPiece = hitBuilding.collider.GetComponent<BuildingPiece>();
+            hitPiece = hitBuilding.collider.GetComponent<BuildingPiece>();
             if (hitPiece != null && previewInstance != null && currentAnchors.Count > 0)
             {
-                Transform closestAnchor = FindClosestAnchor(hitPiece, hitBuilding.point);
+                closestAnchor = FindClosestAnchor(hitPiece, hitBuilding.point);
                 if (closestAnchor != null)
                 {
                     Transform previewAnchor = currentAnchors[currentAnchorIndex];
                     Vector3 anchorOffset = previewAnchor.position - previewInstance.transform.position;
                     position = closestAnchor.position - anchorOffset;
                     snappedToAnchor = true;
+                    hitPoint = hitBuilding.point;
+                    hitNormal = hitBuilding.normal;
                 }
             }
         }
@@ -246,13 +257,29 @@ public class BuildingSystem : MonoBehaviour
             position = GetSnappedPosition(hitTerrain.point);
         }
 
-        // Check if preview has moved to a new position
-        if (Vector3.Distance(position, lastPreviewPosition) > 0.01f)
+        // Reset manualAnchorOverride if looking at a new anchor
+        if (closestAnchor != null && closestAnchor != lastTargetAnchor)
+        {
+            manualAnchorOverride = false;
+            lastTargetAnchor = closestAnchor;
+        }
+        else if (closestAnchor == null)
+        {
+            lastTargetAnchor = null;
+        }
+
+        // Check if preview has moved to a new position or face normal changed
+        bool faceChanged = snappedToAnchor && (hitNormal != lastHitNormal);
+        if (faceChanged)
+        {
+            lastHitNormal = hitNormal;
+        }
+        if (Vector3.Distance(position, lastPreviewPosition) > 0.01f || faceChanged)
         {
             lastPreviewPosition = position;
-            if (!manualAnchorOverride)
+            if (!manualAnchorOverride && hitPiece != null)
             {
-                AutoSelectBestAnchor();
+                AutoSelectBestAnchor(hitPiece, hitPoint, hitNormal);
             }
         }
 
@@ -266,35 +293,61 @@ public class BuildingSystem : MonoBehaviour
     {
         if (previewInstance == null) return false;
 
-        BuildingPiece piece = previewInstance.GetComponent<BuildingPiece>();
-        if (piece == null) return false;
-
-        if (!piece.requiresFoundation) return true;
+        BuildingPiece previewPiece = previewInstance.GetComponent<BuildingPiece>();
+        if (previewPiece == null) return false;
 
         // Count how many anchors are connected
-        int connectedAnchors = 0;
-        int totalAnchors = 0;
-        foreach (Transform anchor in piece.anchorPoints)
+        var connectedAnchors = 0;
+        var previewAnchorCount = 0;
+        var connectedPieces = new List<BuildingPiece>();
+        foreach (Transform anchor in previewPiece.anchorPoints)
         {
             if (anchor == null) continue;
-            totalAnchors++;
+            previewAnchorCount++;
 
-            Collider[] hitColliders = Physics.OverlapSphere(anchor.position, 0.2f, buildingLayerMask);
+            var hitColliders = Physics.OverlapSphere(anchor.position, 0.2f, buildingLayerMask);
             foreach (Collider col in hitColliders)
             {
-                if (col.gameObject != previewInstance.gameObject && col.GetComponent<BuildingPiece>() != null)
+                if (col.gameObject == previewInstance.gameObject) continue;
+
+                if (col.GetComponent<BuildingPiece>() != null)
                 {
+                    if (!connectedPieces.Contains(col.GetComponent<BuildingPiece>()))
+                        connectedPieces.Add(col.GetComponent<BuildingPiece>());
+
                     connectedAnchors++;
-                    break;
                 }
             }
         }
 
-        // Invalid if all anchors are connected (complete overlap)
-        // if (totalAnchors > 0 && connectedAnchors == totalAnchors)
-        // {
-        //     return false;
-        // }
+        // Check if any connected pieces are fully overlapping by anchors
+        foreach (var piece in connectedPieces)
+        {
+            bool allAnchorsConnected = true;
+            foreach (var previewAnchor in previewPiece.anchorPoints)
+            {
+                bool anchorConnected = false;
+                foreach (var otherAnchor in piece.anchorPoints)
+                {
+                    if (previewAnchor != null && otherAnchor != null && Vector3.Distance(previewAnchor.position, otherAnchor.position) < 0.2f)
+                    {
+                        anchorConnected = true;
+                        break;
+                    }
+                }
+                if (!anchorConnected)
+                {
+                    allAnchorsConnected = false;
+                    break;
+                }
+            }
+            if (allAnchorsConnected)
+            {
+                return false;
+            }
+        }
+
+        if (!previewPiece.requiresFoundation) return true;
 
         // At least one anchor must connect to something
         return connectedAnchors > 0;
@@ -310,15 +363,29 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
+    private uint GetPieceIndex()
+    {
+        switch (currentMode)
+        {
+            case BuildMode.Foundation:
+                return (uint)Array.IndexOf(foundationPrefabs, currentPrefab);
+            case BuildMode.Floor:
+                return (uint)Array.IndexOf(floorPrefabs, currentPrefab);
+            case BuildMode.Wall:
+                return (uint)Array.IndexOf(wallPrefabs, currentPrefab);
+            case BuildMode.Stairs:
+                return (uint)Array.IndexOf(stairPrefabs, currentPrefab);
+            default:
+                return 0;
+        }
+    }
+
     private void PlacePiece()
     {
-        // PlacePieceAtPosition(currentPrefab, previewInstance.transform.position, previewInstance.transform.rotation);
-
         // Sync the placed piece over the network
-        BuildingPiece piece = currentPrefab.GetComponent<BuildingPiece>();
-        if (piece != null && buildingSync != null)
+        if (currentPrefab.TryGetComponent(out BuildingPiece piece))
         {
-            buildingSync.PlaceBuildingPiece(previewInstance, piece.pieceType);
+            buildingSync.PlaceBuildingPiece(GetPieceIndex(), previewInstance, piece.pieceType);
         }
     }
 
@@ -363,7 +430,6 @@ public class BuildingSystem : MonoBehaviour
                     buildingSync.RemoveBuildingPiece(piece.PieceId);
                 }
 
-                // Don't destroy the object here - let BuildingSync handle it when the reducer succeeds
                 highlightedObject = null;
                 RestoreHighlightedMaterial();
             }
@@ -431,9 +497,39 @@ public class BuildingSystem : MonoBehaviour
         return closest;
     }
 
-    private void AutoSelectBestAnchor()
+    private void AutoSelectBestAnchor(BuildingPiece targetPiece, Vector3 hitPoint, Vector3 faceNormal)
     {
+        if (previewInstance == null || currentAnchors.Count == 0 || targetPiece == null)
+            return;
 
+        // Find the anchor on the preview furthest in the -faceNormal direction from the preview's center
+        Vector3 previewCenter = previewInstance.transform.position;
+        Vector3 oppositeDir = -faceNormal.normalized;
+
+        float maxDot = float.NegativeInfinity;
+        int bestAnchorIndex = 0;
+
+        for (int i = 0; i < currentAnchors.Count; i++)
+        {
+            Transform anchor = currentAnchors[i];
+            Vector3 anchorDir = (anchor.position - previewCenter).normalized;
+            float dot = Vector3.Dot(anchorDir, oppositeDir);
+            if (dot > maxDot)
+            {
+                maxDot = dot;
+                bestAnchorIndex = i;
+            }
+        }
+
+        // Snap this anchor to the closest anchor on the target piece
+        currentAnchorIndex = bestAnchorIndex;
+        Transform bestPreviewAnchor = currentAnchors[bestAnchorIndex];
+        Transform closestTargetAnchor = FindClosestAnchor(targetPiece, hitPoint);
+        if (closestTargetAnchor != null)
+        {
+            Vector3 anchorOffset = bestPreviewAnchor.position - previewInstance.transform.position;
+            previewInstance.transform.position = closestTargetAnchor.position - anchorOffset;
+        }
     }
 
     private void ToggleBuildingMode()

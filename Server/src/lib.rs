@@ -43,6 +43,7 @@ pub fn connect(ctx: &ReducerContext) -> Result<(), String> {
         ctx.db.player().insert(Player {
             identity: ctx.sender,
             player_id: 0,
+            online: true,
             position,
             rotation,
             look_direction: DbVector2 { x: 0.0, y: 0.0 },
@@ -58,6 +59,11 @@ pub fn connect(ctx: &ReducerContext) -> Result<(), String> {
             health: 100.0,
             max_health: 100.0,
         });
+    } else {
+        if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
+            player.online = true;
+            ctx.db.player().identity().update(player);
+        }
     }
     Ok(())
 }
@@ -65,7 +71,10 @@ pub fn connect(ctx: &ReducerContext) -> Result<(), String> {
 #[spacetimedb::reducer(client_disconnected)]
 pub fn disconnect(ctx: &ReducerContext) -> Result<(), String> {
     log::debug!("{} just disconnected.", ctx.sender);
-    // ctx.db.player().identity().delete(&ctx.sender);
+    if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
+        player.online = false;
+        ctx.db.player().identity().update(player);
+    }
     Ok(())
 }
 
@@ -124,14 +133,16 @@ pub fn reset_player_health(
 #[spacetimedb::reducer]
 pub fn place_building_piece(
     ctx: &ReducerContext,
+    index: u32,
     piece_type: DbBuildingPieceType,
     position: DbVector3,
     rotation: DbVector3,
 ) -> Result<(), String> {
     ctx.db.building_piece().insert(DbBuildingPiece {
-        piece_id: 0, // This will be auto-incremented
+        piece_id: 0,
         owner: ctx.sender,
         piece_type,
+        index,
         position,
         rotation,
     });

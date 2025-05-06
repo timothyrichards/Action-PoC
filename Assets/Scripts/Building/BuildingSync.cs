@@ -51,7 +51,7 @@ public class BuildingSync : MonoBehaviour
         Debug.Log("Subscription applied, waiting for building piece data...");
     }
 
-    public void PlaceBuildingPiece(GameObject placedPiece, DbBuildingPieceType pieceType)
+    public void PlaceBuildingPiece(uint index, GameObject placedPiece, DbBuildingPieceType pieceType)
     {
         // Convert Unity Vector3 to DbVector3
         var position = placedPiece.transform.position;
@@ -60,11 +60,8 @@ public class BuildingSync : MonoBehaviour
         var dbPosition = new DbVector3 { X = position.x, Y = position.y, Z = position.z };
         var dbRotation = new DbVector3 { X = rotation.x, Y = rotation.y, Z = rotation.z };
 
-        // Convert Unity piece type to SpacetimeDB piece type
-        var dbPieceType = pieceType;
-
         // Call the reducer to place the piece
-        ConnectionManager.Conn.Reducers.PlaceBuildingPiece(dbPieceType, dbPosition, dbRotation);
+        ConnectionManager.Conn.Reducers.PlaceBuildingPiece(index, pieceType, dbPosition, dbRotation);
     }
 
     public void RemoveBuildingPiece(uint pieceId)
@@ -85,10 +82,10 @@ public class BuildingSync : MonoBehaviour
         // Get the appropriate prefab based on piece type
         GameObject prefab = pieceType switch
         {
-            DbBuildingPieceType.Foundation => buildingSystem.foundationPrefabs[0],
-            DbBuildingPieceType.Wall => buildingSystem.wallPrefabs[0],
-            DbBuildingPieceType.Floor => buildingSystem.floorPrefabs[0],
-            DbBuildingPieceType.Stair => buildingSystem.stairPrefabs[0],
+            DbBuildingPieceType.Foundation => buildingSystem.foundationPrefabs[piece.Index],
+            DbBuildingPieceType.Wall => buildingSystem.wallPrefabs[piece.Index],
+            DbBuildingPieceType.Floor => buildingSystem.floorPrefabs[piece.Index],
+            DbBuildingPieceType.Stair => buildingSystem.stairPrefabs[piece.Index],
             _ => null
         };
 
