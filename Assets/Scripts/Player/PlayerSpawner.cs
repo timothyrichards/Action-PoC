@@ -6,19 +6,34 @@ using ThirdPersonCamera;
 
 public class PlayerSpawner : MonoBehaviour
 {
+    private static PlayerSpawner _instance;
+    public static PlayerSpawner Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = FindFirstObjectByType<PlayerSpawner>();
+            }
+
+            return _instance;
+        }
+    }
+
     [Header("References")]
     public GameObject playerPrefab;
     public CameraController playerCamera;
     public HealthDisplay playerHealthDisplay;
 
-    private Dictionary<Identity, GameObject> playerObjects = new Dictionary<Identity, GameObject>();
+    private Dictionary<Identity, GameObject> playerObjects = new();
     private Identity localPlayerId;
+
+    public static GameObject LocalPlayer => Instance.playerObjects[Instance.localPlayerId];
 
     private void OnEnable()
     {
         // Subscribe to SpacetimeDB connection events
         ConnectionManager.OnConnected += HandleConnected;
-        ConnectionManager.OnSubscriptionApplied += HandleSubscriptionApplied;
 
         // Subscribe to player table events
         if (ConnectionManager.Conn != null)
@@ -33,7 +48,6 @@ public class PlayerSpawner : MonoBehaviour
     {
         // Unsubscribe from SpacetimeDB connection events
         ConnectionManager.OnConnected -= HandleConnected;
-        ConnectionManager.OnSubscriptionApplied -= HandleSubscriptionApplied;
 
         if (ConnectionManager.Conn != null)
         {
@@ -54,11 +68,6 @@ public class PlayerSpawner : MonoBehaviour
         ConnectionManager.Conn.Db.Player.OnUpdate += HandlePlayerUpdated;
     }
 
-    private void HandleSubscriptionApplied()
-    {
-        // No need to do anything here - OnInsert events will be triggered for existing players
-        Debug.Log("Subscription applied, waiting for player data...");
-    }
 
     private void HandlePlayerJoined(EventContext context, Player player)
     {

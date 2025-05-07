@@ -7,11 +7,15 @@ public class BuildingSync : MonoBehaviour
     private BuildingSystem buildingSystem;
     private Dictionary<uint, GameObject> spawnedPieces = new Dictionary<uint, GameObject>();
 
+    private void Awake()
+    {
+        buildingSystem = GetComponent<BuildingSystem>();
+    }
+
     private void OnEnable()
     {
         // Subscribe to SpacetimeDB connection events
         ConnectionManager.OnConnected += HandleConnected;
-        ConnectionManager.OnSubscriptionApplied += HandleSubscriptionApplied;
 
         // Subscribe to building piece table events if already connected
         if (ConnectionManager.Conn != null)
@@ -25,7 +29,6 @@ public class BuildingSync : MonoBehaviour
     {
         // Unsubscribe from SpacetimeDB connection events
         ConnectionManager.OnConnected -= HandleConnected;
-        ConnectionManager.OnSubscriptionApplied -= HandleSubscriptionApplied;
 
         if (ConnectionManager.Conn != null)
         {
@@ -34,21 +37,11 @@ public class BuildingSync : MonoBehaviour
         }
     }
 
-    private void Start()
-    {
-        buildingSystem = GetComponent<BuildingSystem>();
-    }
-
     private void HandleConnected()
     {
         // Subscribe to table events now that we're connected
         ConnectionManager.Conn.Db.BuildingPiece.OnInsert += HandleBuildingPieceInserted;
         ConnectionManager.Conn.Db.BuildingPiece.OnDelete += HandleBuildingPieceDeleted;
-    }
-
-    private void HandleSubscriptionApplied()
-    {
-        Debug.Log("Subscription applied, waiting for building piece data...");
     }
 
     public void PlaceBuildingPiece(uint index, GameObject placedPiece, DbBuildingPieceType pieceType)

@@ -7,7 +7,6 @@ public class BuildingPiece : MonoBehaviour
     public DbBuildingPieceType pieceType;
     public List<Transform> anchorPoints = new();
     public bool requiresFoundation = true;
-    public float rotationSnapAngle = 15;
 
     private BuildingSystem buildingSystem;
 

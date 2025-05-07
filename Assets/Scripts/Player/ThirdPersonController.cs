@@ -90,6 +90,7 @@ public class ThirdPersonController : MonoBehaviour
         {
             if (playerEntity.CameraFreeForm != null)
                 playerEntity.CameraFreeForm.enabled = false;
+
             return;
         }
 

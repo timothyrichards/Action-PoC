@@ -9,7 +9,6 @@ public class FlyCameraController : MonoBehaviour
 
     private float rotationX = 0f;
     private float rotationY = 0f;
-    private bool cursorLocked = true;
 
     private void Start()
     {
@@ -26,7 +25,7 @@ public class FlyCameraController : MonoBehaviour
 
     private void HandleMouseLook()
     {
-        if (!cursorLocked) return;
+        if (Cursor.lockState != CursorLockMode.Locked) return;
 
         // Get mouse input without smoothing
         float mouseX = Input.GetAxisRaw("Mouse X") * mouseSensitivity;
@@ -43,8 +42,6 @@ public class FlyCameraController : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (!cursorLocked) return;
-
         float currentMoveSpeed = Input.GetKey(KeyCode.LeftShift) ? fastMoveSpeed : moveSpeed;
 
         // Get input for movement

@@ -5,9 +5,11 @@ use spacetimedb::{ReducerContext, Table, Identity};
 
 // Local module declarations
 mod types;
+mod tables;
 
 // Local module imports
-use types::{DbVector3, DbVector2, DbAnimationState, WorldSpawn, world_spawn, Player, player, DbBuildingPiece, building_piece, DbBuildingPieceType};
+use types::{DbVector3, DbVector2, DbAnimationState, DbBuildingPieceType};
+use tables::{WorldSpawn, world_spawn, Player, player, DbBuildingPiece, building_piece};
 
 #[spacetimedb::reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {

@@ -53,10 +53,10 @@ public class ConnectionManager : MonoBehaviour
 
         OnConnected?.Invoke();
 
-        // Request all tables
+        // Request relevant tables
         Conn.SubscriptionBuilder()
             .OnApplied(HandleSubscriptionApplied)
-            .SubscribeToAllTables();
+            .Subscribe(new string[] { "select * from player where online = true", "select * from building_piece" });
     }
 
     void HandleConnectError(Exception ex)

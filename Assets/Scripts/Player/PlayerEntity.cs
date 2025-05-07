@@ -66,6 +66,12 @@ public class PlayerEntity : Entity
         }
     }
 
+    public void ToggleInput()
+    {
+        input.enabled = !input.enabled;
+        controller.enabled = !controller.enabled;
+    }
+
     public override void ResetHealth()
     {
         if (IsLocalPlayer())

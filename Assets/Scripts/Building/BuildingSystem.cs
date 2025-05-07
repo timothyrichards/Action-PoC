@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using System;
 
 public class BuildingSystem : MonoBehaviour
@@ -13,12 +12,8 @@ public class BuildingSystem : MonoBehaviour
             if (_instance == null)
             {
                 _instance = FindFirstObjectByType<BuildingSystem>();
-                if (_instance == null)
-                {
-                    GameObject go = new("BuildingSystem");
-                    _instance = go.AddComponent<BuildingSystem>();
-                }
             }
+
             return _instance;
         }
     }
@@ -28,6 +23,7 @@ public class BuildingSystem : MonoBehaviour
     public float gridSize = 1.0f;
     public float anchorDetectionRadius = 2f;
     public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
+    public enum AnchorMode { Auto, Manual }
 
     [Header("Layers")]
     public LayerMask placementLayerMask;
@@ -45,7 +41,6 @@ public class BuildingSystem : MonoBehaviour
 
     private BuildingUI buildingUI;
     private BuildingSync buildingSync;
-    private Camera cam;
     private BuildMode currentMode = BuildMode.None;
     private GameObject previewInstance;
     private GameObject currentPrefab;
@@ -60,6 +55,9 @@ public class BuildingSystem : MonoBehaviour
     private bool manualAnchorOverride = false;
     private Transform lastTargetAnchor = null;
     private Vector3 lastHitNormal = Vector3.up;
+    private AnchorMode anchorMode = AnchorMode.Auto;
+    public event Action<bool> OnBuildingModeChanged;
+    public event Action<AnchorMode, string> OnAnchorChanged;
 
     private void Awake()
     {
@@ -74,7 +72,6 @@ public class BuildingSystem : MonoBehaviour
 
     void Start()
     {
-        cam = Camera.main;
         buildingUI = FindAnyObjectByType<BuildingUI>();
         buildingSync = GetComponent<BuildingSync>();
         SetBuildMode(currentMode);
@@ -120,15 +117,43 @@ public class BuildingSystem : MonoBehaviour
 
     private void HandleInput()
     {
-        if (Input.GetKeyDown(KeyCode.Q) && previewInstance != null && currentAnchors.Count > 0)
+        if (previewInstance != null && currentAnchors.Count > 0)
         {
-            manualAnchorOverride = true;
-            currentAnchorIndex = (currentAnchorIndex + 1) % currentAnchors.Count;
-        }
-        else if (Input.GetKeyDown(KeyCode.E) && previewInstance != null && currentAnchors.Count > 0)
-        {
-            manualAnchorOverride = true;
-            currentAnchorIndex = (currentAnchorIndex - 1 + currentAnchors.Count) % currentAnchors.Count;
+            bool changed = false;
+
+            if (Input.GetKeyDown(KeyCode.Y))
+            {
+                if (anchorMode == AnchorMode.Auto)
+                {
+                    anchorMode = AnchorMode.Manual;
+                }
+                else
+                {
+                    anchorMode = AnchorMode.Auto;
+                    lastHitNormal = Vector3.zero;
+                    UpdatePreview();
+                }
+
+                manualAnchorOverride = anchorMode == AnchorMode.Manual;
+                changed = true;
+            }
+            else if (Input.GetKeyDown(KeyCode.Q))
+            {
+                anchorMode = AnchorMode.Manual;
+                currentAnchorIndex = (currentAnchorIndex + 1) % currentAnchors.Count;
+                changed = true;
+            }
+            else if (Input.GetKeyDown(KeyCode.E))
+            {
+                anchorMode = AnchorMode.Manual;
+                currentAnchorIndex = (currentAnchorIndex - 1 + currentAnchors.Count) % currentAnchors.Count;
+                changed = true;
+            }
+
+            if (changed)
+            {
+                FireAnchorChangedEvent();
+            }
         }
     }
 
@@ -143,15 +168,9 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
-    public void SwitchMode(BuildMode mode, int index = 0)
+    public void SetBuildMode(BuildMode mode, int index = 0)
     {
         currentMode = mode;
-        SetBuildMode(mode, index);
-    }
-
-    private void SetBuildMode(BuildMode mode, int index = 0)
-    {
-        Debug.Log("Setting build mode to " + mode + " with index " + index);
         currentPrefab = mode switch
         {
             BuildMode.Foundation => foundationPrefabs[index],
@@ -165,30 +184,31 @@ public class BuildingSystem : MonoBehaviour
         {
             Destroy(previewInstance);
         }
+
         if (currentPrefab != null && mode != BuildMode.Delete)
         {
             previewInstance = Instantiate(currentPrefab);
             foreach (Collider col in previewInstance.GetComponentsInChildren<Collider>())
             {
-                var rigidbody = col.AddComponent<Rigidbody>();
-                rigidbody.isKinematic = true;
-                col.isTrigger = true;
+                col.enabled = false;
             }
 
             SetPreviewMaterial(invalidMaterial);
             SetupAnchors();
         }
+
         if (highlightedObject != null)
         {
             RestoreHighlightedMaterial();
         }
+
         currentAnchorIndex = 0;
     }
 
     private void SetupAnchors()
     {
         currentAnchors.Clear();
-        var helper = previewInstance.GetComponent<BuildingPiece>();
+        var helper = previewInstance.GetComponentInParent<BuildingPiece>();
         if (helper != null && helper.anchorPoints != null && helper.anchorPoints.Count > 0)
         {
             foreach (var go in helper.anchorPoints)
@@ -224,7 +244,7 @@ public class BuildingSystem : MonoBehaviour
     {
         if (previewInstance == null || currentMode == BuildMode.None) return;
 
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         Vector3 position = Vector3.zero;
         Vector3 originalRotation = currentPrefab.transform.rotation.eulerAngles;
         Quaternion rotation = Quaternion.Euler(originalRotation.x, rotationY, originalRotation.z);
@@ -236,7 +256,7 @@ public class BuildingSystem : MonoBehaviour
 
         if (Physics.Raycast(ray, out RaycastHit hitBuilding, 100f, buildingLayerMask))
         {
-            hitPiece = hitBuilding.collider.GetComponent<BuildingPiece>();
+            hitPiece = hitBuilding.collider.GetComponentInParent<BuildingPiece>();
             if (hitPiece != null && previewInstance != null && currentAnchors.Count > 0)
             {
                 closestAnchor = FindClosestAnchor(hitPiece, hitBuilding.point);
@@ -249,10 +269,18 @@ public class BuildingSystem : MonoBehaviour
                     hitPoint = hitBuilding.point;
                     hitNormal = hitBuilding.normal;
                 }
+                else
+                {
+                    // If no anchor found but we hit a building, use the current preview anchor
+                    Transform previewAnchor = currentAnchors[currentAnchorIndex];
+                    Vector3 anchorOffset = previewAnchor.position - previewInstance.transform.position;
+                    position = hitBuilding.point - anchorOffset;
+                    hitPoint = hitBuilding.point;
+                    hitNormal = hitBuilding.normal;
+                }
             }
         }
-
-        if (!snappedToAnchor && Physics.Raycast(ray, out RaycastHit hitTerrain, 100f, placementLayerMask))
+        else if (Physics.Raycast(ray, out RaycastHit hitTerrain, 100f, placementLayerMask))
         {
             position = GetSnappedPosition(hitTerrain.point);
         }
@@ -260,8 +288,12 @@ public class BuildingSystem : MonoBehaviour
         // Reset manualAnchorOverride if looking at a new anchor
         if (closestAnchor != null && closestAnchor != lastTargetAnchor)
         {
-            manualAnchorOverride = false;
-            lastTargetAnchor = closestAnchor;
+            if (anchorMode == AnchorMode.Auto) // Only reset in auto mode
+            {
+                manualAnchorOverride = false;
+                lastTargetAnchor = closestAnchor;
+                FireAnchorChangedEvent();
+            }
         }
         else if (closestAnchor == null)
         {
@@ -277,7 +309,7 @@ public class BuildingSystem : MonoBehaviour
         if (Vector3.Distance(position, lastPreviewPosition) > 0.01f || faceChanged)
         {
             lastPreviewPosition = position;
-            if (!manualAnchorOverride && hitPiece != null)
+            if (anchorMode == AnchorMode.Auto && !manualAnchorOverride && hitPiece != null)
             {
                 AutoSelectBestAnchor(hitPiece, hitPoint, hitNormal);
             }
@@ -293,7 +325,7 @@ public class BuildingSystem : MonoBehaviour
     {
         if (previewInstance == null) return false;
 
-        BuildingPiece previewPiece = previewInstance.GetComponent<BuildingPiece>();
+        BuildingPiece previewPiece = previewInstance.GetComponentInParent<BuildingPiece>();
         if (previewPiece == null) return false;
 
         // Count how many anchors are connected
@@ -310,10 +342,11 @@ public class BuildingSystem : MonoBehaviour
             {
                 if (col.gameObject == previewInstance.gameObject) continue;
 
-                if (col.GetComponent<BuildingPiece>() != null)
+                var piece = col.GetComponentInParent<BuildingPiece>();
+                if (piece != null)
                 {
-                    if (!connectedPieces.Contains(col.GetComponent<BuildingPiece>()))
-                        connectedPieces.Add(col.GetComponent<BuildingPiece>());
+                    if (!connectedPieces.Contains(piece))
+                        connectedPieces.Add(piece);
 
                     connectedAnchors++;
                 }
@@ -414,7 +447,7 @@ public class BuildingSystem : MonoBehaviour
             RestoreHighlightedMaterial();
             highlightedObject = null;
         }
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         if (Physics.Raycast(ray, out RaycastHit hit, 100f, buildingLayerMask))
         {
             GameObject target = hit.collider.gameObject;
@@ -424,7 +457,7 @@ public class BuildingSystem : MonoBehaviour
             if (Input.GetMouseButtonDown(0))
             {
                 // Try to remove the piece through BuildingSync
-                BuildingPiece piece = target.GetComponent<BuildingPiece>();
+                BuildingPiece piece = target.GetComponentInParent<BuildingPiece>();
                 if (piece != null && buildingSync != null)
                 {
                     buildingSync.RemoveBuildingPiece(piece.PieceId);
@@ -552,10 +585,7 @@ public class BuildingSystem : MonoBehaviour
             currentMode = BuildMode.None;
 
             // Close the building UI panel
-            if (buildingUI != null)
-            {
-                buildingUI.CloseBuildingPanel();
-            }
+            buildingUI?.CloseBuildingPanel();
         }
         else
         {
@@ -563,6 +593,8 @@ public class BuildingSystem : MonoBehaviour
             currentMode = BuildMode.Foundation;
             SetBuildMode(currentMode);
         }
+
+        OnBuildingModeChanged?.Invoke(isEnabled);
     }
 
     public bool IsBuildingMode()
@@ -579,6 +611,19 @@ public class BuildingSystem : MonoBehaviour
     // Method to get the current anchor index
     public int GetCurrentAnchorIndex()
     {
-        return currentAnchorIndex;
+        return anchorMode == AnchorMode.Auto ? -1 : currentAnchorIndex;
+    }
+
+    // Method to get the current anchor mode
+    public AnchorMode GetCurrentAnchorMode()
+    {
+        return anchorMode;
+    }
+
+    // Fire anchor changed event
+    private void FireAnchorChangedEvent()
+    {
+        string anchorName = anchorMode == AnchorMode.Auto ? "Auto" : (currentAnchors.Count > currentAnchorIndex ? currentAnchors[currentAnchorIndex].name : "");
+        OnAnchorChanged?.Invoke(anchorMode, anchorName);
     }
 }
