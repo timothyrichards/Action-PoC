@@ -25,6 +25,15 @@ pub struct Player {
     pub max_health: f32,
 }
 
+#[spacetimedb::table(name = creative_camera, public)]
+pub struct CreativeCamera {
+    #[primary_key]
+    pub identity: Identity,
+    pub enabled: bool,
+    pub position: DbVector3,
+    pub rotation: DbVector3,
+}
+
 #[spacetimedb::table(name = building_piece, public)]
 pub struct DbBuildingPiece {
     #[primary_key]

@@ -30,6 +30,7 @@ public class FlyCameraController : MonoBehaviour
         // Convert the incoming rotation to proper euler angles
         Vector3 euler = rotation.eulerAngles;
         rotationX = euler.x;
+
         // Normalize rotationX to be between -90 and 90
         if (rotationX > 180f) rotationX -= 360f;
         rotationX = Mathf.Clamp(rotationX, -90f, 90f);

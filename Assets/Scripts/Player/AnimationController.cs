@@ -42,9 +42,18 @@ public class AnimationController : MonoBehaviour
     {
         if (spineBone != null)
         {
-            if (cameraPitch > 180f) cameraPitch -= 360f;
-            float clampedPitch = Mathf.Clamp(cameraPitch, -maxSpinePitch, maxSpinePitch);
-            float clampedYaw = Mathf.Clamp(yawDelta, -maxSpineYaw, maxSpineYaw);
+            // Normalize angles to -180 to 180 range
+            float normalizedPitch = cameraPitch;
+            if (normalizedPitch > 180f) normalizedPitch -= 360f;
+            else if (normalizedPitch < -180f) normalizedPitch += 360f;
+
+            float normalizedYaw = yawDelta;
+            if (normalizedYaw > 180f) normalizedYaw -= 360f;
+            else if (normalizedYaw < -180f) normalizedYaw += 360f;
+
+            // Clamp to max values
+            float clampedPitch = Mathf.Clamp(normalizedPitch, -maxSpinePitch, maxSpinePitch);
+            float clampedYaw = Mathf.Clamp(normalizedYaw, -maxSpineYaw, maxSpineYaw);
 
             Vector3 localEuler = spineBone.localEulerAngles;
             localEuler.x = clampedPitch * spineRotationMultiplier;

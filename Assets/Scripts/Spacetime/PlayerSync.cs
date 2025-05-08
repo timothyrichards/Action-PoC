@@ -38,6 +38,8 @@ public class PlayerSync : MonoBehaviour
             ConnectionManager.Conn.Db.Player.OnInsert += HandlePlayerJoined;
             ConnectionManager.Conn.Db.Player.OnDelete += HandlePlayerLeft;
             ConnectionManager.Conn.Db.Player.OnUpdate += HandlePlayerUpdated;
+            ConnectionManager.Conn.Db.CreativeCamera.OnInsert += HandleCreativeCameraInserted;
+            ConnectionManager.Conn.Db.CreativeCamera.OnUpdate += HandleCreativeCameraUpdated;
         }
     }
 
@@ -51,6 +53,8 @@ public class PlayerSync : MonoBehaviour
             ConnectionManager.Conn.Db.Player.OnInsert -= HandlePlayerJoined;
             ConnectionManager.Conn.Db.Player.OnDelete -= HandlePlayerLeft;
             ConnectionManager.Conn.Db.Player.OnUpdate -= HandlePlayerUpdated;
+            ConnectionManager.Conn.Db.CreativeCamera.OnInsert -= HandleCreativeCameraInserted;
+            ConnectionManager.Conn.Db.CreativeCamera.OnUpdate -= HandleCreativeCameraUpdated;
         }
     }
 
@@ -60,9 +64,12 @@ public class PlayerSync : MonoBehaviour
         ConnectionManager.Conn.Db.Player.OnInsert += HandlePlayerJoined;
         ConnectionManager.Conn.Db.Player.OnDelete += HandlePlayerLeft;
         ConnectionManager.Conn.Db.Player.OnUpdate += HandlePlayerUpdated;
+        ConnectionManager.Conn.Db.CreativeCamera.OnInsert += HandleCreativeCameraInserted;
+        ConnectionManager.Conn.Db.CreativeCamera.OnUpdate += HandleCreativeCameraUpdated;
 
         // Add subscription for online players
         ConnectionManager.Instance.AddSubscription("select * from player where online = true");
+        ConnectionManager.Instance.AddSubscription("select * from creative_camera");
     }
 
     private void HandlePlayerJoined(EventContext context, Player player)
@@ -101,6 +108,24 @@ public class PlayerSync : MonoBehaviour
         {
             var player = playerObject.GetComponent<PlayerEntity>();
             player.UpdateFromPlayer(oldData, newData);
+        }
+    }
+
+    private void HandleCreativeCameraInserted(EventContext context, CreativeCamera creativeCamera)
+    {
+        if (playerObjects.TryGetValue(creativeCamera.Identity, out GameObject playerObject))
+        {
+            var player = playerObject.GetComponent<PlayerEntity>();
+            player.creativeMode.UpdateFromCreativeCamera(creativeCamera, true);
+        }
+    }
+
+    private void HandleCreativeCameraUpdated(EventContext context, CreativeCamera oldData, CreativeCamera newData)
+    {
+        if (playerObjects.TryGetValue(newData.Identity, out GameObject playerObject))
+        {
+            var player = playerObject.GetComponent<PlayerEntity>();
+            player.creativeMode.UpdateFromCreativeCamera(newData, oldData.Enabled != newData.Enabled);
         }
     }
 }

@@ -9,7 +9,7 @@ mod tables;
 
 // Local module imports
 use types::{DbVector3, DbVector2, DbAnimationState, DbBuildingPieceType};
-use tables::{WorldSpawn, world_spawn, Player, player, DbBuildingPiece, building_piece};
+use tables::{WorldSpawn, world_spawn, Player, player, DbBuildingPiece, building_piece, CreativeCamera, creative_camera};
 
 #[spacetimedb::reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {
@@ -67,6 +67,20 @@ pub fn connect(ctx: &ReducerContext) -> Result<(), String> {
             ctx.db.player().identity().update(player);
         }
     }
+
+    if ctx.db.creative_camera().identity().find(ctx.sender).is_none() {
+        ctx.db.creative_camera().insert(CreativeCamera {
+            identity: ctx.sender,
+            enabled: false,
+            position: DbVector3 { x: 0.0, y: 0.0, z: 0.0 },
+            rotation: DbVector3 { x: 0.0, y: 0.0, z: 0.0 },
+        });
+    } else {
+        if let Some(mut creative_camera) = ctx.db.creative_camera().identity().find(ctx.sender) {
+            creative_camera.enabled = false;
+            ctx.db.creative_camera().identity().update(creative_camera);
+        }
+    }
     Ok(())
 }
 
@@ -97,6 +111,36 @@ pub fn move_player(
         Ok(())
     } else {
         Err("Player not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn toggle_creative_camera(
+    ctx: &ReducerContext,
+    enabled: bool,
+) -> Result<(), String> {
+    if let Some(mut creative_camera) = ctx.db.creative_camera().identity().find(ctx.sender) {
+        creative_camera.enabled = enabled;
+        ctx.db.creative_camera().identity().update(creative_camera);
+        Ok(())
+    } else {
+        Err("Creative camera not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn move_creative_camera(
+    ctx: &ReducerContext,
+    position: DbVector3,
+    rotation: DbVector3,
+) -> Result<(), String> {
+    if let Some(mut creative_camera) = ctx.db.creative_camera().identity().find(ctx.sender) {
+        creative_camera.position = position;
+        creative_camera.rotation = rotation;
+        ctx.db.creative_camera().identity().update(creative_camera);
+        Ok(())
+    } else {
+        Err("Creative camera not found".to_string())
     }
 }
 

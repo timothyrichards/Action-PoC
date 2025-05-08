@@ -6,8 +6,6 @@ using UnityEngine.InputSystem;
 
 public class PlayerEntity : Entity
 {
-    private FreeForm _cameraFreeForm;
-
     [Header("Runtime")]
     public Identity ownerIdentity;
     public bool Initialized { get; private set; }
@@ -15,8 +13,22 @@ public class PlayerEntity : Entity
     [Header("References")]
     public PlayerInput input;
     public ThirdPersonController controller;
+    public CreativeMode creativeMode;
     public AnimationController animController;
     public GameObject nameplate;
+
+    [Header("Interpolation Settings")]
+    public float positionSmoothTime = 0.15f;
+    public float rotationLerpSpeed = 8f;
+    public float spineLerpSpeed = 8f;
+
+    private Vector3 targetPosition;
+    private Quaternion targetRotation;
+    private float targetCameraPitch;
+    private float targetYawDelta;
+    private Vector3 currentVelocity;
+
+    private FreeForm _cameraFreeForm;
 
     public FreeForm CameraFreeForm
     {
@@ -41,6 +53,7 @@ public class PlayerEntity : Entity
         input = GetComponent<PlayerInput>();
         controller = GetComponent<ThirdPersonController>();
         animController = GetComponent<AnimationController>();
+        creativeMode = GetComponent<CreativeMode>();
     }
 
     public bool IsLocalPlayer()
@@ -68,6 +81,18 @@ public class PlayerEntity : Entity
             // Disable input and third person controller for other players
             input.enabled = false;
             controller.enabled = false;
+
+            // Initialize target values for interpolation
+            targetPosition = new Vector3(player.Position.X, player.Position.Y, player.Position.Z);
+            targetRotation = Quaternion.Euler(player.Rotation.X, player.Rotation.Y, player.Rotation.Z);
+            targetCameraPitch = player.LookDirection.X;
+            targetYawDelta = player.LookDirection.Y;
+
+            // Set initial transform values to match targets
+            transform.position = targetPosition;
+            transform.rotation = targetRotation;
+            animController.cameraPitch = targetCameraPitch;
+            animController.yawDelta = targetYawDelta;
         }
 
         // Update the health
@@ -84,9 +109,9 @@ public class PlayerEntity : Entity
         // Only update position and rotation for non-local players
         if (!newData.Identity.Equals(ConnectionManager.LocalIdentity))
         {
-            // Update transform
-            transform.position = new Vector3(newData.Position.X, newData.Position.Y, newData.Position.Z);
-            transform.rotation = Quaternion.Euler(newData.Rotation.X, newData.Rotation.Y, newData.Rotation.Z);
+            // Set target transform values
+            targetPosition = new Vector3(newData.Position.X, newData.Position.Y, newData.Position.Z);
+            targetRotation = Quaternion.Euler(newData.Rotation.X, newData.Rotation.Y, newData.Rotation.Z);
 
             // Update animation state
             animController.SetWalkingState(newData.AnimationState.IsMoving);
@@ -100,9 +125,9 @@ public class PlayerEntity : Entity
                 )
             );
 
-            // Update spine look values
-            animController.cameraPitch = newData.LookDirection.X;
-            animController.yawDelta = newData.LookDirection.Y;
+            // Set target spine look values
+            targetCameraPitch = newData.LookDirection.X;
+            targetYawDelta = newData.LookDirection.Y;
 
             // Handle one-time triggers
             if (newData.AnimationState.IsJumping && !oldData.AnimationState.IsJumping)
@@ -126,6 +151,41 @@ public class PlayerEntity : Entity
         {
             Die();
         }
+    }
+
+    private void Update()
+    {
+        if (!Initialized || IsLocalPlayer()) return;
+
+        // Smoothly interpolate position using SmoothDamp
+        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref currentVelocity, positionSmoothTime);
+
+        // Smoothly interpolate rotation using Slerp
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationLerpSpeed * Time.deltaTime);
+
+        // Smoothly interpolate spine look values
+        float currentPitch = animController.cameraPitch;
+        float currentYaw = animController.yawDelta;
+
+        // Normalize angles before interpolation
+        if (Mathf.Abs(targetCameraPitch - currentPitch) > 180f)
+        {
+            if (targetCameraPitch > currentPitch)
+                currentPitch += 360f;
+            else
+                currentPitch -= 360f;
+        }
+
+        if (Mathf.Abs(targetYawDelta - currentYaw) > 180f)
+        {
+            if (targetYawDelta > currentYaw)
+                currentYaw += 360f;
+            else
+                currentYaw -= 360f;
+        }
+
+        animController.cameraPitch = Mathf.Lerp(currentPitch, targetCameraPitch, spineLerpSpeed * Time.deltaTime);
+        animController.yawDelta = Mathf.Lerp(currentYaw, targetYawDelta, spineLerpSpeed * Time.deltaTime);
     }
 
     public void ToggleInput()

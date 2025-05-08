@@ -125,7 +125,6 @@ public class ThirdPersonController : MonoBehaviour
         playerEntity.animController.UpdateCombatLayerWeight(currentMovement.magnitude > 0.1f, isGrounded);
 
         if (!ConnectionManager.IsConnected()) return;
-        // if (!ConnectionManager.Conn.Db.Player.Identity.Equals(ConnectionManager.LocalIdentity)) return;
 
         float cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
         float yawDelta = CalculateYawDelta();
