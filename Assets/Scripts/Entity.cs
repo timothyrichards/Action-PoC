@@ -1,38 +1,27 @@
 using UnityEngine;
-using System;
 
-public class Entity : MonoBehaviour, IDamageable
+public abstract class Entity : MonoBehaviour
 {
-    [Header("Health Settings")]
-    public float health { get; set; } = 100f;
-    public float maxHealth { get; set; } = 100f;
-
-    public Action<float> OnHealthChanged { get; set; }
+    protected HealthComponent healthComponent;
 
     protected virtual void Awake()
     {
-        maxHealth = health;
-    }
-
-    public virtual void ResetHealth()
-    {
-        health = maxHealth;
-        OnHealthChanged?.Invoke(health);
+        healthComponent = GetComponent<HealthComponent>();
     }
 
     public virtual void TakeDamage(float damage)
     {
-        health -= damage;
-        OnHealthChanged?.Invoke(health);
-
-        if (health <= 0)
+        healthComponent.TakeDamage(damage);
+        if (healthComponent.CurrentHealth <= 0)
         {
             Die();
         }
     }
 
-    public virtual void Die()
+    public virtual void ResetHealth()
     {
-        Debug.Log($"{gameObject.name} died");
+        healthComponent.ResetHealth();
     }
+
+    protected abstract void Die();
 }

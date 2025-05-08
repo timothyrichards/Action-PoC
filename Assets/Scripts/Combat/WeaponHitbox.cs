@@ -8,7 +8,7 @@ public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
     public LayerMask entityLayer;
     public List<Collider> hitboxColliders = new();
     private bool hitboxActive = false;
-    private HashSet<IDamageable> damagedEntities = new();
+    private HashSet<Entity> damagedEntities = new();
 
     private void Awake()
     {

@@ -13,6 +13,8 @@ public class CreativeMode : MonoBehaviour
 
     void Start()
     {
+        if (!playerEntity.IsLocalPlayer()) enabled = false;
+
         flyingCamera.transform.parent = null;
     }
 
@@ -23,6 +25,8 @@ public class CreativeMode : MonoBehaviour
 
     void OnDisable()
     {
+        if (!BuildingSystem.Instance) return;
+
         BuildingSystem.Instance.OnBuildingModeChanged -= OnBuildingModeChanged;
     }
 
@@ -33,9 +37,9 @@ public class CreativeMode : MonoBehaviour
             playerEntity.ToggleInput();
             playerEntity.CameraFreeForm.gameObject.SetActive(false);
 
+            var flyingCameraController = flyingCamera.GetComponent<FlyCameraController>();
             flyingCamera.SetActive(true);
-            flyingCamera.transform.position = playerEntity.CameraFreeForm.transform.position;
-            flyingCamera.transform.rotation = playerEntity.CameraFreeForm.transform.rotation;
+            flyingCameraController.UpdateTransform(playerEntity.CameraFreeForm.transform.position, playerEntity.CameraFreeForm.transform.rotation);
         }
         else
         {

@@ -42,6 +42,9 @@ public class BuildingSync : MonoBehaviour
         // Subscribe to table events now that we're connected
         ConnectionManager.Conn.Db.BuildingPiece.OnInsert += HandleBuildingPieceInserted;
         ConnectionManager.Conn.Db.BuildingPiece.OnDelete += HandleBuildingPieceDeleted;
+
+        // Add subscription for building pieces
+        ConnectionManager.Instance.AddSubscription("select * from building_piece");
     }
 
     public void PlaceBuildingPiece(uint index, GameObject placedPiece, DbBuildingPieceType pieceType)

@@ -3,24 +3,25 @@ using System.Collections;
 
 public class hitDummy : MonoBehaviour
 {
-
 	public EnemyEntity enemy;
 	public GameObject hay;
 	private Animator DummyAnimator;
+	private IHealth healthComponent;
 
 	void Start()
 	{
 		DummyAnimator = GetComponent<Animator>();
+		healthComponent = enemy.GetComponent<HealthComponent>();
 	}
 
 	void OnEnable()
 	{
-		enemy.OnHealthChanged += OnHealthChanged;
+		healthComponent.OnHealthChanged += OnHealthChanged;
 	}
 
 	void OnDisable()
 	{
-		enemy.OnHealthChanged -= OnHealthChanged;
+		healthComponent.OnHealthChanged -= OnHealthChanged;
 	}
 
 	void OnHealthChanged(float health)

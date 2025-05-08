@@ -5,8 +5,8 @@ using UnityEngine;
 
 public class ConnectionManager : MonoBehaviour
 {
-    const string SERVER_URL = "http://127.0.0.1:3000";
-    const string MODULE_NAME = "action";
+    const string SERVER_URL = "https://maincloud.spacetimedb.com";
+    const string MODULE_NAME = "sandbox";
 
     public static event Action OnConnected;
     public static event Action OnSubscriptionApplied;
@@ -17,6 +17,8 @@ public class ConnectionManager : MonoBehaviour
     public static ConnectionManager Instance { get; private set; }
     public static Identity LocalIdentity { get; private set; }
     public static DbConnection Conn { get; private set; }
+
+    private SubscriptionBuilder _subscriptionBuilder;
 
     private void Start()
     {
@@ -31,6 +33,9 @@ public class ConnectionManager : MonoBehaviour
             .OnDisconnect(HandleDisconnect)
             .WithUri(SERVER_URL)
             .WithModuleName(MODULE_NAME);
+
+        // Clear cached connection data to ensure proper connection
+        PlayerPrefs.DeleteKey("spacetimedb.identity_token" + " - " + Application.dataPath);
 
         // If the user has a SpacetimeDB auth token stored in the Unity PlayerPrefs,
         // we can use it to authenticate the connection.
@@ -51,12 +56,15 @@ public class ConnectionManager : MonoBehaviour
         AuthToken.SaveToken(token);
         LocalIdentity = identity;
 
-        OnConnected?.Invoke();
-
         // Request relevant tables
-        Conn.SubscriptionBuilder()
-            .OnApplied(HandleSubscriptionApplied)
-            .Subscribe(new string[] { "select * from player where online = true", "select * from building_piece" });
+        _subscriptionBuilder = Conn.SubscriptionBuilder().OnApplied(HandleSubscriptionApplied);
+
+        OnConnected?.Invoke();
+    }
+
+    public void AddSubscription(string query)
+    {
+        _subscriptionBuilder.Subscribe(new string[] { query });
     }
 
     void HandleConnectError(Exception ex)

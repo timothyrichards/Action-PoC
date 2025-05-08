@@ -23,6 +23,21 @@ public class FlyCameraController : MonoBehaviour
         HandleMovement();
     }
 
+    public void UpdateTransform(Vector3 position, Quaternion rotation)
+    {
+        transform.position = position;
+
+        // Convert the incoming rotation to proper euler angles
+        Vector3 euler = rotation.eulerAngles;
+        rotationX = euler.x;
+        // Normalize rotationX to be between -90 and 90
+        if (rotationX > 180f) rotationX -= 360f;
+        rotationX = Mathf.Clamp(rotationX, -90f, 90f);
+
+        rotationY = euler.y;
+        transform.rotation = Quaternion.Euler(rotationX, rotationY, 0);
+    }
+
     private void HandleMouseLook()
     {
         if (Cursor.lockState != CursorLockMode.Locked) return;

@@ -3,23 +3,21 @@ using System.Collections;
 
 public class EnemyEntity : Entity
 {
-    public float fallDuration = 3f;
-
+    [SerializeField] private float fallDuration = 3f;
     private bool isDown = false;
 
     public override void TakeDamage(float amount)
     {
         if (isDown) return;
-
         base.TakeDamage(amount);
     }
 
-    public override void Die()
+    protected override void Die()
     {
         StartCoroutine(FallAndRecover());
     }
 
-    IEnumerator FallAndRecover()
+    private IEnumerator FallAndRecover()
     {
         isDown = true;
 
@@ -51,7 +49,7 @@ public class EnemyEntity : Entity
         }
         transform.rotation = startRot;
 
-        health = maxHealth;
+        healthComponent.ResetHealth();
         isDown = false;
     }
 }
