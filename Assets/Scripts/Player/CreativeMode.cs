@@ -100,7 +100,7 @@ public class CreativeMode : MonoBehaviour
                 playerEntity.CameraFreeForm.gameObject.SetActive(true);
             }
 
-            ConnectionManager.Conn.Reducers.ToggleCreativeCamera(isBuilding);
+            ConnectionManager.Conn.Reducers.SetCreativeCameraEnabled(isBuilding);
             return;
         }
     }

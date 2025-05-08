@@ -440,8 +440,8 @@ namespace SpacetimeDB.Types
                 "place_building_piece" => BSATNHelpers.Decode<Reducer.PlaceBuildingPiece>(encodedArgs),
                 "remove_building_piece" => BSATNHelpers.Decode<Reducer.RemoveBuildingPiece>(encodedArgs),
                 "reset_player_health" => BSATNHelpers.Decode<Reducer.ResetPlayerHealth>(encodedArgs),
+                "set_creative_camera_enabled" => BSATNHelpers.Decode<Reducer.SetCreativeCameraEnabled>(encodedArgs),
                 "set_world_spawn" => BSATNHelpers.Decode<Reducer.SetWorldSpawn>(encodedArgs),
-                "toggle_creative_camera" => BSATNHelpers.Decode<Reducer.ToggleCreativeCamera>(encodedArgs),
                 var reducer => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
         }
@@ -471,8 +471,8 @@ namespace SpacetimeDB.Types
                 Reducer.PlaceBuildingPiece args => Reducers.InvokePlaceBuildingPiece(eventContext, args),
                 Reducer.RemoveBuildingPiece args => Reducers.InvokeRemoveBuildingPiece(eventContext, args),
                 Reducer.ResetPlayerHealth args => Reducers.InvokeResetPlayerHealth(eventContext, args),
+                Reducer.SetCreativeCameraEnabled args => Reducers.InvokeSetCreativeCameraEnabled(eventContext, args),
                 Reducer.SetWorldSpawn args => Reducers.InvokeSetWorldSpawn(eventContext, args),
-                Reducer.ToggleCreativeCamera args => Reducers.InvokeToggleCreativeCamera(eventContext, args),
                 _ => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
         }

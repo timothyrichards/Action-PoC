@@ -27,7 +27,6 @@ public class PlayerEntity : Entity
     private float targetCameraPitch;
     private float targetYawDelta;
     private Vector3 currentVelocity;
-
     private FreeForm _cameraFreeForm;
 
     public FreeForm CameraFreeForm
