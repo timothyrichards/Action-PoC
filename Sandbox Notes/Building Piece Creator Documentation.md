@@ -32,6 +32,6 @@
 - If you make a mistake, you can always delete the prefab and try again
 
 ## Troubleshooting
-- **"Building Piece Database not found!"**: Contact a programmer - the database file might be missing
+- **"Building Piece Database not found!"**: Contact Tim - the database file might be missing
 - **"Please assign a template prefab"**: You need to drag an existing building piece prefab into the Template Prefab field
 - **Template doesn't work**: Make sure you're using an existing building piece as a template (it needs to have the BuildingPiece component)

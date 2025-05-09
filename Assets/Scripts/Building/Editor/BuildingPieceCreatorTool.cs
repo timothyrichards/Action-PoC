@@ -123,7 +123,12 @@ public class BuildingPieceCreatorTool : EditorWindow
         newPiece.name = pieceName; // Set the name before creating the prefab asset
 
         // Configure the BuildingPiece component
-        BuildingPiece buildingPiece = newPiece.GetComponent<BuildingPiece>() ?? newPiece.AddComponent<BuildingPiece>();
+        BuildingPiece buildingPiece = newPiece.GetComponent<BuildingPiece>();
+        if (buildingPiece == null)
+        {
+            buildingPiece = newPiece.AddComponent<BuildingPiece>();
+        }
+
         buildingPiece.pieceType = selectedPieceType;
         buildingPiece.variantId = nextVariantId;
 
@@ -149,6 +154,7 @@ public class BuildingPieceCreatorTool : EditorWindow
 
         // Show success message with stored variables
         EditorUtility.DisplayDialog("Success",
-            $"Created new {finalPieceType} piece '{finalPieceName}' with variant ID {nextVariantId}", "OK");
+            $"Created new {finalPieceType} piece '{finalPieceName}' with variant ID {nextVariantId}\n\n" +
+            $"Copy this message and send it to Tim if you want the piece to be added to the Server.", "OK");
     }
 }
