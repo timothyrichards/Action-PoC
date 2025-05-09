@@ -13,27 +13,27 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteTables
     {
-        public sealed class BuildingPieceHandle : RemoteTableHandle<EventContext, DbBuildingPiece>
+        public sealed class BuildingPiecePlacedHandle : RemoteTableHandle<EventContext, DbBuildingPiecePlaced>
         {
-            protected override string RemoteTableName => "building_piece";
+            protected override string RemoteTableName => "building_piece_placed";
 
             public sealed class PieceIdUniqueIndex : UniqueIndexBase<uint>
             {
-                protected override uint GetKey(DbBuildingPiece row) => row.PieceId;
+                protected override uint GetKey(DbBuildingPiecePlaced row) => row.PieceId;
 
-                public PieceIdUniqueIndex(BuildingPieceHandle table) : base(table) { }
+                public PieceIdUniqueIndex(BuildingPiecePlacedHandle table) : base(table) { }
             }
 
             public readonly PieceIdUniqueIndex PieceId;
 
-            internal BuildingPieceHandle(DbConnection conn) : base(conn)
+            internal BuildingPiecePlacedHandle(DbConnection conn) : base(conn)
             {
                 PieceId = new(this);
             }
 
-            protected override object GetPrimaryKey(DbBuildingPiece row) => row.PieceId;
+            protected override object GetPrimaryKey(DbBuildingPiecePlaced row) => row.PieceId;
         }
 
-        public readonly BuildingPieceHandle BuildingPiece;
+        public readonly BuildingPiecePlacedHandle BuildingPiecePlaced;
     }
 }

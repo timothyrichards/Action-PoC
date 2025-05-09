@@ -83,7 +83,6 @@ public class ConnectionManager : MonoBehaviour
 
     private void HandleSubscriptionApplied(SubscriptionEventContext ctx)
     {
-        Debug.Log("Subscription applied!");
         OnSubscriptionApplied?.Invoke();
     }
 

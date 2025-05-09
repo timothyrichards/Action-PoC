@@ -20,7 +20,8 @@ namespace SpacetimeDB.Types
     {
         public RemoteTables(DbConnection conn)
         {
-            AddTable(BuildingPiece = new(conn));
+            AddTable(BuildingPiecePlaced = new(conn));
+            AddTable(BuildingPieceVariant = new(conn));
             AddTable(CreativeCamera = new(conn));
             AddTable(Player = new(conn));
             AddTable(WorldSpawn = new(conn));
@@ -433,12 +434,12 @@ namespace SpacetimeDB.Types
             return update.ReducerCall.ReducerName switch
             {
                 "apply_damage" => BSATNHelpers.Decode<Reducer.ApplyDamage>(encodedArgs),
+                "building_piece_place" => BSATNHelpers.Decode<Reducer.BuildingPiecePlace>(encodedArgs),
+                "building_piece_remove" => BSATNHelpers.Decode<Reducer.BuildingPieceRemove>(encodedArgs),
                 "connect" => BSATNHelpers.Decode<Reducer.Connect>(encodedArgs),
                 "disconnect" => BSATNHelpers.Decode<Reducer.Disconnect>(encodedArgs),
                 "move_creative_camera" => BSATNHelpers.Decode<Reducer.MoveCreativeCamera>(encodedArgs),
                 "move_player" => BSATNHelpers.Decode<Reducer.MovePlayer>(encodedArgs),
-                "place_building_piece" => BSATNHelpers.Decode<Reducer.PlaceBuildingPiece>(encodedArgs),
-                "remove_building_piece" => BSATNHelpers.Decode<Reducer.RemoveBuildingPiece>(encodedArgs),
                 "reset_player_health" => BSATNHelpers.Decode<Reducer.ResetPlayerHealth>(encodedArgs),
                 "set_creative_camera_enabled" => BSATNHelpers.Decode<Reducer.SetCreativeCameraEnabled>(encodedArgs),
                 "set_world_spawn" => BSATNHelpers.Decode<Reducer.SetWorldSpawn>(encodedArgs),
@@ -464,12 +465,12 @@ namespace SpacetimeDB.Types
             return reducer switch
             {
                 Reducer.ApplyDamage args => Reducers.InvokeApplyDamage(eventContext, args),
+                Reducer.BuildingPiecePlace args => Reducers.InvokeBuildingPiecePlace(eventContext, args),
+                Reducer.BuildingPieceRemove args => Reducers.InvokeBuildingPieceRemove(eventContext, args),
                 Reducer.Connect args => Reducers.InvokeConnect(eventContext, args),
                 Reducer.Disconnect args => Reducers.InvokeDisconnect(eventContext, args),
                 Reducer.MoveCreativeCamera args => Reducers.InvokeMoveCreativeCamera(eventContext, args),
                 Reducer.MovePlayer args => Reducers.InvokeMovePlayer(eventContext, args),
-                Reducer.PlaceBuildingPiece args => Reducers.InvokePlaceBuildingPiece(eventContext, args),
-                Reducer.RemoveBuildingPiece args => Reducers.InvokeRemoveBuildingPiece(eventContext, args),
                 Reducer.ResetPlayerHealth args => Reducers.InvokeResetPlayerHealth(eventContext, args),
                 Reducer.SetCreativeCameraEnabled args => Reducers.InvokeSetCreativeCameraEnabled(eventContext, args),
                 Reducer.SetWorldSpawn args => Reducers.InvokeSetWorldSpawn(eventContext, args),

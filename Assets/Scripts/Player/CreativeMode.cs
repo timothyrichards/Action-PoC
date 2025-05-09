@@ -8,12 +8,11 @@ public class CreativeMode : MonoBehaviour
     public FlyCameraController flyingCamera;
 
     [Header("Interpolation Settings")]
-    public float positionLerpSpeed = 15f;
-    public float rotationLerpSpeed = 15f;
-
-    private Vector3 targetPosition;
-    private Quaternion targetRotation;
     private Vector3 currentVelocity;
+    public Vector3 targetPosition;
+    public Quaternion targetRotation;
+    public float positionSmoothTime = 0.15f;
+    public float rotationLerpSpeed = 8f;
 
     private void Awake()
     {
@@ -22,14 +21,9 @@ public class CreativeMode : MonoBehaviour
 
     void Start()
     {
-        bool isLocalPlayer = playerEntity.IsLocalPlayer();
-        if (!isLocalPlayer)
+        if (!playerEntity.IsLocalPlayer())
         {
-            flyingCamera.GetComponent<Camera>().enabled = false;
-            flyingCamera.GetComponent<AudioListener>().enabled = false;
-
-            // Disable the FlyCameraController and any other components on the flying camera
-            var components = flyingCamera.GetComponents<MonoBehaviour>();
+            var components = flyingCamera.GetComponents<Behaviour>();
             foreach (var component in components)
             {
                 component.enabled = false;
@@ -39,69 +33,86 @@ public class CreativeMode : MonoBehaviour
 
     void Update()
     {
-        if (playerEntity.IsLocalPlayer())
-        {
-            var transform = flyingCamera.transform;
-            ConnectionManager.Conn.Reducers.MoveCreativeCamera(
-                new DbVector3(transform.position.x, transform.position.y, transform.position.z),
-                new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z)
-            );
-            return;
-        }
+        if (playerEntity.IsLocalPlayer()) return;
 
-        flyingCamera.transform.position = Vector3.SmoothDamp(flyingCamera.transform.position, targetPosition, ref currentVelocity, positionLerpSpeed * Time.deltaTime);
-        flyingCamera.transform.rotation = Quaternion.Slerp(flyingCamera.transform.rotation, targetRotation, rotationLerpSpeed * Time.deltaTime);
+        var transform = flyingCamera.transform;
+        var distance = Vector3.Distance(transform.position, targetPosition);
+
+        transform.position = distance > 5f ? targetPosition : Vector3.SmoothDamp(transform.position, targetPosition, ref currentVelocity, positionSmoothTime);
+        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationLerpSpeed * Time.deltaTime);
+    }
+
+    void FixedUpdate()
+    {
+        if (!playerEntity.IsLocalPlayer() || !flyingCamera.gameObject.activeSelf) return;
+
+        var transform = flyingCamera.transform;
+        ConnectionManager.Conn.Reducers.MoveCreativeCamera(
+            new DbVector3(transform.position.x, transform.position.y, transform.position.z),
+            new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z)
+        );
     }
 
     void OnEnable()
     {
+        if (BuildingSystem.Instance.IsEnabled)
+        {
+            EnableCreativeMode();
+        }
+
         BuildingSystem.Instance.OnBuildingModeChanged += OnBuildingModeChanged;
     }
 
     void OnDisable()
     {
+        if (playerEntity.CameraFreeForm)
+        {
+            DisableCreativeMode();
+        }
+
         if (!BuildingSystem.Instance) return;
 
         BuildingSystem.Instance.OnBuildingModeChanged -= OnBuildingModeChanged;
     }
 
-    public void UpdateFromCreativeCamera(CreativeCamera creativeCamera, bool instantUpdate = false)
+    private void OnBuildingModeChanged(bool isBuilding)
     {
-        if (playerEntity.IsLocalPlayer()) return;
-
-        targetPosition = new Vector3(creativeCamera.Position.X, creativeCamera.Position.Y, creativeCamera.Position.Z);
-        targetRotation = Quaternion.Euler(creativeCamera.Rotation.X, creativeCamera.Rotation.Y, creativeCamera.Rotation.Z);
-
-        flyingCamera.gameObject.SetActive(creativeCamera.Enabled);
-
-        if (instantUpdate)
+        if (isBuilding && BuildingSystem.Instance.IsCreativeMode)
         {
-            flyingCamera.UpdateTransform(targetPosition, targetRotation);
+            EnableCreativeMode();
+        }
+        else
+        {
+            DisableCreativeMode();
         }
     }
 
-    private void OnBuildingModeChanged(bool isBuilding)
+    private void EnableCreativeMode()
     {
-        if (playerEntity.IsLocalPlayer())
-        {
-            if (isBuilding)
-            {
-                playerEntity.ToggleInput();
-                playerEntity.CameraFreeForm.gameObject.SetActive(false);
+        if (!playerEntity.IsLocalPlayer()) return;
 
-                flyingCamera.gameObject.SetActive(true);
-                flyingCamera.UpdateTransform(playerEntity.CameraFreeForm.transform.position, playerEntity.CameraFreeForm.transform.rotation);
-            }
-            else
-            {
-                flyingCamera.gameObject.SetActive(false);
+        playerEntity.SetInputEnabled(false);
+        playerEntity.CameraFreeForm.gameObject.SetActive(false);
 
-                playerEntity.ToggleInput();
-                playerEntity.CameraFreeForm.gameObject.SetActive(true);
-            }
+        flyingCamera.gameObject.SetActive(true);
+        flyingCamera.UpdateTransform(playerEntity.CameraFreeForm.transform.position, playerEntity.CameraFreeForm.transform.rotation);
 
-            ConnectionManager.Conn.Reducers.SetCreativeCameraEnabled(isBuilding);
-            return;
-        }
+        if (!ConnectionManager.IsConnected()) return;
+
+        ConnectionManager.Conn.Reducers.SetCreativeCameraEnabled(true);
+    }
+
+    private void DisableCreativeMode()
+    {
+        if (!playerEntity.IsLocalPlayer()) return;
+
+        flyingCamera.gameObject.SetActive(false);
+
+        playerEntity.SetInputEnabled(true);
+        playerEntity.CameraFreeForm.gameObject.SetActive(true);
+
+        if (!ConnectionManager.IsConnected()) return;
+
+        ConnectionManager.Conn.Reducers.SetCreativeCameraEnabled(false);
     }
 }

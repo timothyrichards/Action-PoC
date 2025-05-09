@@ -1,5 +1,5 @@
 // External crate imports
-use spacetimedb::{SpacetimeType};
+use spacetimedb::SpacetimeType;
 
 #[derive(SpacetimeType, Clone, Debug)]
 pub struct DbVector3 {
@@ -10,7 +10,11 @@ pub struct DbVector3 {
 
 impl Default for DbVector3 {
     fn default() -> Self {
-        Self { x: 0.0, y: 0.0, z: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
     }
 }
 

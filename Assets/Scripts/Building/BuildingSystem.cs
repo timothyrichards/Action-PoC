@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using SpacetimeDB.Types;
 
 public class BuildingSystem : MonoBehaviour
 {
@@ -18,12 +19,14 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
+    [Header("Runtime")]
+    public bool IsEnabled { get; private set; } = false;
+    public bool IsCreativeMode { get; private set; } = false;
+
     [Header("Building Settings")]
     public float rotationStep = 15f;
     public float gridSize = 1.0f;
     public float anchorDetectionRadius = 2f;
-    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
-    public enum AnchorMode { Auto, Manual }
 
     [Header("Layers")]
     public LayerMask placementLayerMask;
@@ -34,23 +37,21 @@ public class BuildingSystem : MonoBehaviour
     public Material invalidMaterial;
 
     [Header("Prefabs")]
-    public GameObject[] foundationPrefabs;
-    public GameObject[] floorPrefabs;
-    public GameObject[] wallPrefabs;
-    public GameObject[] stairPrefabs;
+    public BuildingPieceDatabase database;
 
+    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
+    public enum AnchorMode { Auto, Manual }
     private BuildingUI buildingUI;
-    private BuildingSync buildingSync;
+    private BuildingManager buildingSync;
     private BuildMode currentMode = BuildMode.None;
     private GameObject previewInstance;
-    private GameObject currentPrefab;
+    private BuildingPiece currentPrefab;
     private GameObject highlightedObject;
     private bool isValidPlacement = false;
     private float rotationY = 0f;
     private Dictionary<GameObject, Material[]> originalMaterials = new();
     private int currentAnchorIndex = 0;
     private List<Transform> currentAnchors = new();
-    private bool isEnabled = false;
     private Vector3 lastPreviewPosition;
     private bool manualAnchorOverride = false;
     private Transform lastTargetAnchor = null;
@@ -67,13 +68,12 @@ public class BuildingSystem : MonoBehaviour
             return;
         }
         _instance = this;
-        DontDestroyOnLoad(gameObject);
     }
 
     void Start()
     {
         buildingUI = FindAnyObjectByType<BuildingUI>();
-        buildingSync = GetComponent<BuildingSync>();
+        buildingSync = GetComponent<BuildingManager>();
         SetBuildMode(currentMode);
     }
 
@@ -85,7 +85,7 @@ public class BuildingSystem : MonoBehaviour
             return;
         }
 
-        if (!isEnabled) return;
+        if (!IsEnabled) return;
 
         // Only handle building input if the panel is closed and cursor is locked
         if (!buildingUI.IsPanelOpen() && Cursor.lockState == CursorLockMode.Locked)
@@ -101,7 +101,7 @@ public class BuildingSystem : MonoBehaviour
                 UpdatePreview();
                 if (Input.GetMouseButtonDown(0) && isValidPlacement && currentMode != BuildMode.None)
                 {
-                    PlacePiece();
+                    PlacePiece(currentPrefab.variantId);
                 }
             }
         }
@@ -119,8 +119,13 @@ public class BuildingSystem : MonoBehaviour
     {
         if (previewInstance != null && currentAnchors.Count > 0)
         {
-            bool changed = false;
+            if (Input.GetKeyDown(KeyCode.H))
+            {
+                IsCreativeMode = !IsCreativeMode;
+                OnBuildingModeChanged?.Invoke(IsEnabled);
+            }
 
+            bool changed = false;
             if (Input.GetKeyDown(KeyCode.Y))
             {
                 if (anchorMode == AnchorMode.Auto)
@@ -168,26 +173,19 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
-    public void SetBuildMode(BuildMode mode, int index = 0)
+    public void SetBuildMode(BuildMode mode, DbBuildingPieceType type = DbBuildingPieceType.Foundation, uint variant = 0)
     {
         currentMode = mode;
-        currentPrefab = mode switch
-        {
-            BuildMode.Foundation => foundationPrefabs[index],
-            BuildMode.Floor => floorPrefabs[index],
-            BuildMode.Wall => wallPrefabs[index],
-            BuildMode.Stairs => stairPrefabs[index],
-            _ => null
-        };
+        currentPrefab = database.GetPrefabByTypeAndVariant(type, variant);
 
         if (previewInstance != null)
         {
             Destroy(previewInstance);
         }
 
-        if (currentPrefab != null && mode != BuildMode.Delete)
+        if (currentPrefab != null && mode != BuildMode.None && mode != BuildMode.Delete)
         {
-            previewInstance = Instantiate(currentPrefab);
+            previewInstance = Instantiate(currentPrefab.gameObject);
             foreach (Collider col in previewInstance.GetComponentsInChildren<Collider>())
             {
                 col.enabled = false;
@@ -396,29 +394,12 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
-    private uint GetPieceIndex()
-    {
-        switch (currentMode)
-        {
-            case BuildMode.Foundation:
-                return (uint)Array.IndexOf(foundationPrefabs, currentPrefab);
-            case BuildMode.Floor:
-                return (uint)Array.IndexOf(floorPrefabs, currentPrefab);
-            case BuildMode.Wall:
-                return (uint)Array.IndexOf(wallPrefabs, currentPrefab);
-            case BuildMode.Stairs:
-                return (uint)Array.IndexOf(stairPrefabs, currentPrefab);
-            default:
-                return 0;
-        }
-    }
-
-    private void PlacePiece()
+    private void PlacePiece(uint variantId)
     {
         // Sync the placed piece over the network
         if (currentPrefab.TryGetComponent(out BuildingPiece piece))
         {
-            buildingSync.PlaceBuildingPiece(GetPieceIndex(), previewInstance, piece.pieceType);
+            buildingSync.BuildingPiecePlace(variantId, previewInstance);
         }
     }
 
@@ -460,7 +441,7 @@ public class BuildingSystem : MonoBehaviour
                 BuildingPiece piece = target.GetComponentInParent<BuildingPiece>();
                 if (piece != null && buildingSync != null)
                 {
-                    buildingSync.RemoveBuildingPiece(piece.PieceId);
+                    buildingSync.BuildingPieceRemove(piece.PieceId);
                 }
 
                 highlightedObject = null;
@@ -567,9 +548,9 @@ public class BuildingSystem : MonoBehaviour
 
     private void ToggleBuildingMode()
     {
-        isEnabled = !isEnabled;
+        IsEnabled = !IsEnabled;
 
-        if (!isEnabled)
+        if (!IsEnabled)
         {
             // Clean up when disabling
             if (previewInstance != null)
@@ -594,12 +575,7 @@ public class BuildingSystem : MonoBehaviour
             SetBuildMode(currentMode);
         }
 
-        OnBuildingModeChanged?.Invoke(isEnabled);
-    }
-
-    public bool IsBuildingMode()
-    {
-        return isEnabled;
+        OnBuildingModeChanged?.Invoke(IsEnabled);
     }
 
     // Method to check if a GameObject is the current preview piece

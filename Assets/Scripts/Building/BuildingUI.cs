@@ -1,3 +1,5 @@
+using System;
+using SpacetimeDB.Types;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -64,7 +66,7 @@ public class BuildingUI : MonoBehaviour
     void Update()
     {
         // Only allow toggling piecesPanel if in build mode
-        if (buildingSystem.IsBuildingMode() && Input.GetMouseButtonDown(1))
+        if (buildingSystem.IsEnabled && Input.GetMouseButtonDown(1))
         {
             ToggleBuildMenuPanel();
         }
@@ -72,47 +74,43 @@ public class BuildingUI : MonoBehaviour
 
     private void SetupButtons()
     {
-        var foundationPrefabs = buildingSystem.foundationPrefabs;
-        for (int i = 0; i < foundationPrefabs.Length; i++)
+        foreach (DbBuildingPieceType type in Enum.GetValues(typeof(DbBuildingPieceType)))
         {
-            var index = i;
-            var button = Instantiate(buttonPrefab, foundationPiecesPanel.transform);
-            button.name = foundationPrefabs[i].name;
-            button.GetComponentInChildren<TextMeshProUGUI>().text = foundationPrefabs[i].name;
-            button.GetComponent<Button>().onClick.AddListener(() => SwitchToFoundation(index));
+            var panel = type switch
+            {
+                DbBuildingPieceType.Foundation => foundationPiecesPanel,
+                DbBuildingPieceType.Floor => floorPiecesPanel,
+                DbBuildingPieceType.Wall => wallPiecesPanel,
+                DbBuildingPieceType.Stair => stairsPiecesPanel,
+                _ => throw new NotImplementedException(),
+            };
+
+            var pieces = buildingSystem.database.GetPrefabsByType(type);
+            foreach (var piece in pieces)
+            {
+                var index = pieces.IndexOf(piece);
+                var button = Instantiate(buttonPrefab, panel.transform);
+                button.name = piece.name;
+                button.GetComponentInChildren<TextMeshProUGUI>().text = piece.name;
+                button.GetComponent<Button>().onClick.AddListener(() => SwitchToBuildMode(BuildMode.Foundation, piece));
+            }
         }
 
-        var floorPrefabs = buildingSystem.floorPrefabs;
-        for (int i = 0; i < floorPrefabs.Length; i++)
+        deleteButton?.onClick.AddListener(() => SwitchToBuildMode(BuildMode.Delete, null));
+    }
+
+    public void SwitchToBuildMode(BuildMode mode, BuildingPiece piece)
+    {
+        if (piece)
         {
-            var index = i;
-            var button = Instantiate(buttonPrefab, floorPiecesPanel.transform);
-            button.name = floorPrefabs[i].name;
-            button.GetComponentInChildren<TextMeshProUGUI>().text = floorPrefabs[i].name;
-            button.GetComponent<Button>().onClick.AddListener(() => SwitchToFloor(index));
+            buildingSystem.SetBuildMode(mode, piece.pieceType, piece.variantId);
+        }
+        else
+        {
+            buildingSystem.SetBuildMode(mode);
         }
 
-        var wallPrefabs = buildingSystem.wallPrefabs;
-        for (int i = 0; i < wallPrefabs.Length; i++)
-        {
-            var index = i;
-            var button = Instantiate(buttonPrefab, wallPiecesPanel.transform);
-            button.name = wallPrefabs[i].name;
-            button.GetComponentInChildren<TextMeshProUGUI>().text = wallPrefabs[i].name;
-            button.GetComponent<Button>().onClick.AddListener(() => SwitchToWall(index));
-        }
-
-        var stairPrefabs = buildingSystem.stairPrefabs;
-        for (int i = 0; i < stairPrefabs.Length; i++)
-        {
-            var index = i;
-            var button = Instantiate(buttonPrefab, stairsPiecesPanel.transform);
-            button.name = stairPrefabs[i].name;
-            button.GetComponentInChildren<TextMeshProUGUI>().text = stairPrefabs[i].name;
-            button.GetComponent<Button>().onClick.AddListener(() => SwitchToStairs(index));
-        }
-
-        deleteButton?.onClick.AddListener(SwitchToDelete);
+        CloseBuildingPanel();
     }
 
     private void ToggleBuildMenuPanel(bool overrideState = false)
@@ -140,36 +138,5 @@ public class BuildingUI : MonoBehaviour
         // Set cursor state based on panel visibility
         Cursor.lockState = isPanelVisible ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = isPanelVisible;
-    }
-
-    public void SwitchToFoundation(int index)
-    {
-        SwitchToBuildMode(BuildMode.Foundation, index);
-    }
-
-    public void SwitchToFloor(int index)
-    {
-        SwitchToBuildMode(BuildMode.Floor, index);
-    }
-
-    public void SwitchToWall(int index)
-    {
-        SwitchToBuildMode(BuildMode.Wall, index);
-    }
-
-    public void SwitchToStairs(int index)
-    {
-        SwitchToBuildMode(BuildMode.Stairs, index);
-    }
-
-    public void SwitchToDelete()
-    {
-        SwitchToBuildMode(BuildMode.Delete);
-    }
-
-    public void SwitchToBuildMode(BuildMode mode, int index = 0)
-    {
-        buildingSystem.SetBuildMode(mode, index);
-        CloseBuildingPanel();
     }
 }

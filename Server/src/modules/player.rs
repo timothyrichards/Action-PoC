@@ -1,6 +1,6 @@
-use spacetimedb::{SpacetimeType, ReducerContext, Table, Identity};
-use crate::types::{DbVector3, DbVector2};
 use crate::modules::world_spawn::world_spawn;
+use crate::types::{DbVector2, DbVector3};
+use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table};
 
 #[derive(SpacetimeType, Clone, Debug)]
 pub struct DbAnimationState {
@@ -20,6 +20,7 @@ pub struct Player {
     #[unique]
     #[auto_inc]
     pub player_id: u32,
+    #[index(btree)]
     pub online: bool,
     pub position: DbVector3,
     pub rotation: DbVector3,
@@ -33,7 +34,18 @@ pub fn create_player(ctx: &ReducerContext) -> Result<(), String> {
     let (position, rotation) = if let Some(spawn) = ctx.db.world_spawn().id().find(&0) {
         (spawn.position, spawn.rotation)
     } else {
-        (DbVector3 { x: 0.0, y: 0.0, z: 0.0 }, DbVector3 { x: 0.0, y: 0.0, z: 0.0 })
+        (
+            DbVector3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            DbVector3 {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        )
     };
 
     ctx.db.player().insert(Player {
@@ -68,8 +80,8 @@ pub fn set_player_online_status(ctx: &ReducerContext, online: bool) -> Result<()
 
 #[spacetimedb::reducer]
 pub fn move_player(
-    ctx: &ReducerContext, 
-    position: DbVector3, 
+    ctx: &ReducerContext,
+    position: DbVector3,
     rotation: DbVector3,
     look_direction: DbVector2,
     animation_state: DbAnimationState,
@@ -105,10 +117,7 @@ pub fn apply_damage(
 }
 
 #[spacetimedb::reducer]
-pub fn reset_player_health(
-    ctx: &ReducerContext,
-    target_identity: Identity,
-) -> Result<(), String> {
+pub fn reset_player_health(ctx: &ReducerContext, target_identity: Identity) -> Result<(), String> {
     if let Some(mut player) = ctx.db.player().identity().find(&target_identity) {
         player.health = player.max_health;
         ctx.db.player().identity().update(player);
@@ -116,4 +125,4 @@ pub fn reset_player_health(
     } else {
         Err("Player not found".to_string())
     }
-} 
+}

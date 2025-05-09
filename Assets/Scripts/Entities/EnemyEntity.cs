@@ -49,7 +49,7 @@ public class EnemyEntity : Entity
         }
         transform.rotation = startRot;
 
-        healthComponent.ResetHealth();
+        HealthComponent.ResetHealth();
         isDown = false;
     }
 }

@@ -5,6 +5,7 @@ public class BuildingPiece : MonoBehaviour
 {
     public uint PieceId { get; set; }
     public DbBuildingPieceType pieceType;
+    public uint variantId;
     public List<Transform> anchorPoints = new();
     public bool requiresFoundation = true;
 

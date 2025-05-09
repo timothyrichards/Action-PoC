@@ -1,5 +1,5 @@
-use spacetimedb::{ReducerContext, Table, Identity};
 use crate::types::DbVector3;
+use spacetimedb::{Identity, ReducerContext, Table};
 
 #[spacetimedb::table(name = creative_camera, public)]
 pub struct CreativeCamera {
@@ -45,4 +45,4 @@ pub fn move_creative_camera(
     } else {
         Err("Creative camera not found".to_string())
     }
-} 
+}

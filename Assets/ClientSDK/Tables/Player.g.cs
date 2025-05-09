@@ -26,6 +26,15 @@ namespace SpacetimeDB.Types
 
             public readonly IdentityUniqueIndex Identity;
 
+            public sealed class OnlineIndex : BTreeIndexBase<bool>
+            {
+                protected override bool GetKey(Player row) => row.Online;
+
+                public OnlineIndex(PlayerHandle table) : base(table) { }
+            }
+
+            public readonly OnlineIndex Online;
+
             public sealed class PlayerIdUniqueIndex : UniqueIndexBase<uint>
             {
                 protected override uint GetKey(Player row) => row.PlayerId;
@@ -38,6 +47,7 @@ namespace SpacetimeDB.Types
             internal PlayerHandle(DbConnection conn) : base(conn)
             {
                 Identity = new(this);
+                Online = new(this);
                 PlayerId = new(this);
             }
 

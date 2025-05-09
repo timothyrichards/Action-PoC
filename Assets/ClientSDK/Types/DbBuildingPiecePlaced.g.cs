@@ -11,39 +11,35 @@ namespace SpacetimeDB.Types
 {
     [SpacetimeDB.Type]
     [DataContract]
-    public sealed partial class DbBuildingPiece
+    public sealed partial class DbBuildingPiecePlaced
     {
         [DataMember(Name = "piece_id")]
         public uint PieceId;
         [DataMember(Name = "owner")]
         public SpacetimeDB.Identity Owner;
-        [DataMember(Name = "index")]
-        public uint Index;
-        [DataMember(Name = "piece_type")]
-        public DbBuildingPieceType PieceType;
+        [DataMember(Name = "variant_id")]
+        public uint VariantId;
         [DataMember(Name = "position")]
         public DbVector3 Position;
         [DataMember(Name = "rotation")]
         public DbVector3 Rotation;
 
-        public DbBuildingPiece(
+        public DbBuildingPiecePlaced(
             uint PieceId,
             SpacetimeDB.Identity Owner,
-            uint Index,
-            DbBuildingPieceType PieceType,
+            uint VariantId,
             DbVector3 Position,
             DbVector3 Rotation
         )
         {
             this.PieceId = PieceId;
             this.Owner = Owner;
-            this.Index = Index;
-            this.PieceType = PieceType;
+            this.VariantId = VariantId;
             this.Position = Position;
             this.Rotation = Rotation;
         }
 
-        public DbBuildingPiece()
+        public DbBuildingPiecePlaced()
         {
             this.Position = new();
             this.Rotation = new();

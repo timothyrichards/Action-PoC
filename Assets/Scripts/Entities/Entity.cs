@@ -2,17 +2,17 @@ using UnityEngine;
 
 public abstract class Entity : MonoBehaviour
 {
-    protected HealthComponent healthComponent;
+    public HealthComponent HealthComponent { get; private set; }
 
     protected virtual void Awake()
     {
-        healthComponent = GetComponent<HealthComponent>();
+        HealthComponent = GetComponent<HealthComponent>();
     }
 
     public virtual void TakeDamage(float damage)
     {
-        healthComponent.TakeDamage(damage);
-        if (healthComponent.CurrentHealth <= 0)
+        HealthComponent.TakeDamage(damage);
+        if (HealthComponent.CurrentHealth <= 0)
         {
             Die();
         }
@@ -20,7 +20,7 @@ public abstract class Entity : MonoBehaviour
 
     public virtual void ResetHealth()
     {
-        healthComponent.ResetHealth();
+        HealthComponent.ResetHealth();
     }
 
     protected abstract void Die();

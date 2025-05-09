@@ -12,12 +12,12 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteReducers : RemoteBase
     {
-        public delegate void SetWorldSpawnHandler(ReducerEventContext ctx, uint id, float x, float y, float z, float rx, float ry, float rz);
+        public delegate void SetWorldSpawnHandler(ReducerEventContext ctx, uint id, DbVector3 position, DbVector3 rotation);
         public event SetWorldSpawnHandler? OnSetWorldSpawn;
 
-        public void SetWorldSpawn(uint id, float x, float y, float z, float rx, float ry, float rz)
+        public void SetWorldSpawn(uint id, DbVector3 position, DbVector3 rotation)
         {
-            conn.InternalCallReducer(new Reducer.SetWorldSpawn(id, x, y, z, rx, ry, rz), this.SetCallReducerFlags.SetWorldSpawnFlags);
+            conn.InternalCallReducer(new Reducer.SetWorldSpawn(id, position, rotation), this.SetCallReducerFlags.SetWorldSpawnFlags);
         }
 
         public bool InvokeSetWorldSpawn(ReducerEventContext ctx, Reducer.SetWorldSpawn args)
@@ -26,12 +26,8 @@ namespace SpacetimeDB.Types
             OnSetWorldSpawn(
                 ctx,
                 args.Id,
-                args.X,
-                args.Y,
-                args.Z,
-                args.Rx,
-                args.Ry,
-                args.Rz
+                args.Position,
+                args.Rotation
             );
             return true;
         }
@@ -45,40 +41,26 @@ namespace SpacetimeDB.Types
         {
             [DataMember(Name = "id")]
             public uint Id;
-            [DataMember(Name = "x")]
-            public float X;
-            [DataMember(Name = "y")]
-            public float Y;
-            [DataMember(Name = "z")]
-            public float Z;
-            [DataMember(Name = "rx")]
-            public float Rx;
-            [DataMember(Name = "ry")]
-            public float Ry;
-            [DataMember(Name = "rz")]
-            public float Rz;
+            [DataMember(Name = "position")]
+            public DbVector3 Position;
+            [DataMember(Name = "rotation")]
+            public DbVector3 Rotation;
 
             public SetWorldSpawn(
                 uint Id,
-                float X,
-                float Y,
-                float Z,
-                float Rx,
-                float Ry,
-                float Rz
+                DbVector3 Position,
+                DbVector3 Rotation
             )
             {
                 this.Id = Id;
-                this.X = X;
-                this.Y = Y;
-                this.Z = Z;
-                this.Rx = Rx;
-                this.Ry = Ry;
-                this.Rz = Rz;
+                this.Position = Position;
+                this.Rotation = Rotation;
             }
 
             public SetWorldSpawn()
             {
+                this.Position = new();
+                this.Rotation = new();
             }
 
             string IReducerArgs.ReducerName => "set_world_spawn";

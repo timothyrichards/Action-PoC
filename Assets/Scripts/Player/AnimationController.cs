@@ -62,14 +62,10 @@ public class AnimationController : MonoBehaviour
         }
     }
 
-    public void SetMovementAnimation(Vector2 movement)
+    public void SetMovementAnimation(Vector2 movement, bool isWalking)
     {
         animator.SetFloat(horizontalHash, movement.x, 0.05f, Time.deltaTime);
         animator.SetFloat(verticalHash, movement.y, 0.05f, Time.deltaTime);
-    }
-
-    public void SetWalkingState(bool isWalking)
-    {
         animator.SetBool(isWalkingHash, isWalking);
     }
 
