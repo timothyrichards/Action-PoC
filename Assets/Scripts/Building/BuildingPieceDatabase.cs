@@ -52,6 +52,23 @@ public class BuildingPieceDatabase : ScriptableObject
         RebuildLookupMaps();
     }
 
+    public void RemovePrefabVariant(BuildingPiece prefab)
+    {
+        buildingPiecePrefabs.Remove(prefab);
+        RebuildLookupMaps();
+    }
+
+    public void RemoveNullEntries()
+    {
+        buildingPiecePrefabs.RemoveAll(piece => piece == null);
+        RebuildLookupMaps();
+    }
+
+    public List<BuildingPiece> GetPrefabs()
+    {
+        return buildingPiecePrefabs;
+    }
+
     public List<BuildingPiece> GetPrefabsByType(DbBuildingPieceType pieceType)
     {
         if (pieceTypeMap.Count == 0)

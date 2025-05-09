@@ -14,7 +14,6 @@ kanban-plugin: board
 ## Next
 
 - [ ] Create a better way to track online vs offline players since making queries from the CLI or accessing the web portal keeps creating ghost players.
-- [ ] Improve the way building pieces are stored in the database so we're not just using an arbitrary index that can change at any moment on the client
 - [ ] Add multiple attacks so you can have attack chains
 
 
@@ -25,6 +24,7 @@ kanban-plugin: board
 
 ## Done
 
+- [ ] Improve the way building pieces are stored in the database so we're not just using an arbitrary index that can change at any moment on the client
 - [ ] Add multiple building piece options for each category
 - [ ] Add UI to the building UI that shows the current anchor state
 - [ ] Add auto as an option in the anchor cycling rotation and disable logic that tries to determine when to allow manual switching vs auto anchor switching
