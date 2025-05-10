@@ -60,7 +60,7 @@ namespace ThirdPersonCamera
         public void Start()
         {
             cameraController = GetComponent<CameraController>();
-            
+
             x = 0;
             y = 0;
 
@@ -117,7 +117,7 @@ namespace ThirdPersonCamera
                 if (inputFreeLook)
                 {
                     x = Input.GetAxis("Mouse X") * mouseSensitivity.x;
-                    y = Input.GetAxis("Mouse Y") * mouseSensitivity.y;                   
+                    y = Input.GetAxis("Mouse Y") * mouseSensitivity.y;
 
                     if (mouseInvertY)
                         y *= -1.0f;
@@ -139,7 +139,7 @@ namespace ThirdPersonCamera
                         Cursor.lockState = CursorLockMode.None;
                     }
                 }
-                
+
                 if (controllerEnabled && x == 0 && y == 0)
                 {
                     // sample controller input
@@ -173,7 +173,7 @@ namespace ThirdPersonCamera
                     smoothX = x;
                     smoothY = y;
                 }
-                
+
                 Vector3 offsetVectorTransformed = cameraController.target.transform.rotation * cameraController.offsetVector;
 
                 transform.RotateAround(cameraController.target.position + offsetVectorTransformed, cameraController.target.up, smoothX);
@@ -207,7 +207,7 @@ namespace ThirdPersonCamera
                     {
                         yAngle = Vector3.Angle(transform.forward, downVector) - 180;
                     }
-                }                               
+                }
 
                 if (!cameraController.smartPivot || cameraController.cameraNormalMode
                     && (!cameraController.bGroundHit || (cameraController.bGroundHit && y < 0) || transform.position.y > (cameraController.target.position.y + cameraController.offsetVector.y)))

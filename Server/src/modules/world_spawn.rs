@@ -10,7 +10,7 @@ pub struct WorldSpawn {
 }
 
 pub fn world_spawn_init(ctx: &ReducerContext) -> Result<(), String> {
-    set_world_spawn(
+    world_spawn_set(
         ctx,
         0,
         DbVector3 {
@@ -24,7 +24,7 @@ pub fn world_spawn_init(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb::reducer]
-pub fn set_world_spawn(
+pub fn world_spawn_set(
     ctx: &ReducerContext,
     id: u32,
     position: DbVector3,

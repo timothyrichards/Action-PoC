@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using QFSW.QC;
 using SpacetimeDB;
 using ThirdPersonCamera;
 using UnityEngine;
@@ -44,6 +46,9 @@ public class PlayerEntity : Entity
     public float rotationLerpSpeed = 8f;
     public float spineLerpSpeed = 8f;
 
+    private QuantumConsole _quantumConsole;
+    private HashSet<object> disableInputRequests = new();
+
     protected override void Awake()
     {
         base.Awake();
@@ -52,6 +57,19 @@ public class PlayerEntity : Entity
         controller = GetComponent<ThirdPersonController>();
         animController = GetComponent<AnimationController>();
         creativeMode = GetComponent<CreativeMode>();
+        _quantumConsole = QuantumConsole.Instance ?? FindFirstObjectByType<QuantumConsole>();
+    }
+
+    void OnEnable()
+    {
+        _quantumConsole.OnActivate += OnActivate;
+        _quantumConsole.OnDeactivate += OnDeactivate;
+    }
+
+    void OnDisable()
+    {
+        _quantumConsole.OnActivate -= OnActivate;
+        _quantumConsole.OnDeactivate -= OnDeactivate;
     }
 
     private void Update()
@@ -90,6 +108,45 @@ public class PlayerEntity : Entity
         animController.yawDelta = Mathf.Lerp(currentYaw, targetYawDelta, spineLerpSpeed * Time.deltaTime);
     }
 
+    private void OnActivate()
+    {
+        RequestInputDisabled(this);
+    }
+
+    private void OnDeactivate()
+    {
+        RequestInputEnabled(this);
+    }
+
+    public void RequestInputDisabled(object requester)
+    {
+        disableInputRequests.Add(requester);
+        UpdateInputState();
+    }
+
+    public void RequestInputEnabled(object requester)
+    {
+        disableInputRequests.Remove(requester);
+        UpdateInputState();
+    }
+
+    private void UpdateInputState()
+    {
+        if (disableInputRequests.Count > 0)
+        {
+            SetInputEnabled(false);
+        }
+        else
+        {
+            SetInputEnabled(true);
+        }
+    }
+
+    public void SetInputEnabled(bool enabled)
+    {
+        InputEnabled = enabled;
+    }
+
     public bool IsLocalPlayer()
     {
         if (ConnectionManager.LocalIdentity == null)
@@ -101,16 +158,11 @@ public class PlayerEntity : Entity
         return ownerIdentity.Equals(ConnectionManager.LocalIdentity);
     }
 
-    public void SetInputEnabled(bool enabled)
-    {
-        InputEnabled = enabled;
-    }
-
     public override void TakeDamage(float damage)
     {
         if (IsLocalPlayer())
         {
-            ConnectionManager.Conn.Reducers.ApplyDamage(ownerIdentity, damage);
+            ConnectionManager.Conn.Reducers.PlayerApplyDamage(ownerIdentity, damage);
         }
     }
 
@@ -118,7 +170,7 @@ public class PlayerEntity : Entity
     {
         if (ConnectionManager.IsConnected() && IsLocalPlayer())
         {
-            ConnectionManager.Conn.Reducers.ResetPlayerHealth(ownerIdentity);
+            ConnectionManager.Conn.Reducers.PlayerResetHealth(ownerIdentity);
         }
     }
 

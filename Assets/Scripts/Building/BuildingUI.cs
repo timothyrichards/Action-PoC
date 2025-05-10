@@ -136,7 +136,13 @@ public class BuildingUI : MonoBehaviour
         buildMenu.SetActive(isPanelVisible);
 
         // Set cursor state based on panel visibility
-        Cursor.lockState = isPanelVisible ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = isPanelVisible;
+        if (isPanelVisible)
+        {
+            CursorManager.Instance.RequestCursorUnlock(this);
+        }
+        else
+        {
+            CursorManager.Instance.RequestCursorLock(this);
+        }
     }
 }

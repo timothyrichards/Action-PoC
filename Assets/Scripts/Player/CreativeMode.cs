@@ -47,7 +47,7 @@ public class CreativeMode : MonoBehaviour
         if (!playerEntity.IsLocalPlayer() || !flyingCamera.gameObject.activeSelf) return;
 
         var transform = flyingCamera.transform;
-        ConnectionManager.Conn.Reducers.MoveCreativeCamera(
+        ConnectionManager.Conn.Reducers.CreativeCameraMove(
             new DbVector3(transform.position.x, transform.position.y, transform.position.z),
             new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z)
         );
@@ -91,7 +91,7 @@ public class CreativeMode : MonoBehaviour
     {
         if (!playerEntity.IsLocalPlayer()) return;
 
-        playerEntity.SetInputEnabled(false);
+        playerEntity.RequestInputDisabled(this);
         playerEntity.CameraFreeForm.gameObject.SetActive(false);
 
         flyingCamera.gameObject.SetActive(true);
@@ -99,7 +99,7 @@ public class CreativeMode : MonoBehaviour
 
         if (!ConnectionManager.IsConnected()) return;
 
-        ConnectionManager.Conn.Reducers.SetCreativeCameraEnabled(true);
+        ConnectionManager.Conn.Reducers.CreativeCameraSetEnabled(true);
     }
 
     private void DisableCreativeMode()
@@ -108,11 +108,11 @@ public class CreativeMode : MonoBehaviour
 
         flyingCamera.gameObject.SetActive(false);
 
-        playerEntity.SetInputEnabled(true);
+        playerEntity.RequestInputEnabled(this);
         playerEntity.CameraFreeForm.gameObject.SetActive(true);
 
         if (!ConnectionManager.IsConnected()) return;
 
-        ConnectionManager.Conn.Reducers.SetCreativeCameraEnabled(false);
+        ConnectionManager.Conn.Reducers.CreativeCameraSetEnabled(false);
     }
 }

@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using SpacetimeDB.Types;
+using QFSW.QC;
 
 [RequireComponent(typeof(CharacterController))]
 public class ThirdPersonController : MonoBehaviour
 {
     [Header("Runtime")]
     public PlayerEntity playerEntity;
+    public bool movingPlayer = false;
 
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
@@ -115,11 +117,6 @@ public class ThirdPersonController : MonoBehaviour
         playerEntity.animController.SetTurningState(false, 0f);
     }
 
-    private void Start()
-    {
-        Cursor.lockState = CursorLockMode.Locked;
-    }
-
     private void Update()
     {
         if (!playerEntity.InputEnabled)
@@ -141,6 +138,8 @@ public class ThirdPersonController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (movingPlayer) return;
+
         if (!ConnectionManager.IsConnected()) return;
 
         if (!playerEntity.IsLocalPlayer()) return;
@@ -148,7 +147,7 @@ public class ThirdPersonController : MonoBehaviour
         float cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
         float yawDelta = CalculateYawDelta();
 
-        ConnectionManager.Conn.Reducers.MovePlayer(
+        ConnectionManager.Conn.Reducers.PlayerUpdate(
             new DbVector3(transform.position.x, transform.position.y, transform.position.z),
             new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z),
             new DbVector2(cameraPitch, yawDelta),
@@ -244,5 +243,15 @@ public class ThirdPersonController : MonoBehaviour
         }
 
         controller.Move(velocity * Time.deltaTime);
+    }
+
+    [Command]
+    public void ForceMove(float x, float y, float z)
+    {
+        movingPlayer = true;
+        controller.enabled = false;
+        transform.position = new Vector3(x, y, z);
+        controller.enabled = true;
+        movingPlayer = false;
     }
 }

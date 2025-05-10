@@ -1,3 +1,4 @@
+use crate::modules::creative_camera::{creative_camera_create, creative_camera_set_enabled};
 use crate::modules::world_spawn::world_spawn;
 use crate::types::{DbVector2, DbVector3};
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table};
@@ -30,7 +31,7 @@ pub struct Player {
     pub max_health: f32,
 }
 
-pub fn create_player(ctx: &ReducerContext) -> Result<(), String> {
+pub fn player_create(ctx: &ReducerContext) -> Result<(), String> {
     let (position, rotation) = if let Some(spawn) = ctx.db.world_spawn().id().find(&0) {
         (spawn.position, spawn.rotation)
     } else {
@@ -67,11 +68,20 @@ pub fn create_player(ctx: &ReducerContext) -> Result<(), String> {
         health: 100.0,
         max_health: 100.0,
     });
+
+    log::debug!("Player {} created", ctx.sender);
+
     Ok(())
 }
 
-pub fn set_player_online_status(ctx: &ReducerContext, online: bool) -> Result<(), String> {
+pub fn player_set_online_status(ctx: &ReducerContext, online: bool) -> Result<(), String> {
     if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
+        if online {
+            log::debug!("Player {} is online", ctx.sender);
+        } else {
+            log::debug!("Player {} is offline", ctx.sender);
+        }
+
         player.online = online;
         ctx.db.player().identity().update(player);
     }
@@ -79,17 +89,78 @@ pub fn set_player_online_status(ctx: &ReducerContext, online: bool) -> Result<()
 }
 
 #[spacetimedb::reducer]
-pub fn move_player(
+pub fn player_connected(ctx: &ReducerContext) -> Result<(), String> {
+    if ctx.db.player().identity().find(ctx.sender).is_some() {
+        player_set_online_status(ctx, true)?;
+        creative_camera_set_enabled(ctx, false)?;
+    } else {
+        player_create(ctx)?;
+        creative_camera_create(ctx)?;
+    }
+    Ok(())
+}
+
+#[spacetimedb::reducer]
+pub fn player_update(
     ctx: &ReducerContext,
     position: DbVector3,
     rotation: DbVector3,
     look_direction: DbVector2,
     animation_state: DbAnimationState,
 ) -> Result<(), String> {
+    if ctx.db.player().identity().find(ctx.sender).is_some() {
+        player_set_position(ctx, position)?;
+        player_set_rotation(ctx, rotation)?;
+        player_set_look_direction(ctx, look_direction)?;
+        player_set_animation_state(ctx, animation_state)?;
+        Ok(())
+    } else {
+        Err("Player not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn player_set_position(ctx: &ReducerContext, position: DbVector3) -> Result<(), String> {
     if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
         player.position = position;
+        ctx.db.player().identity().update(player);
+        Ok(())
+    } else {
+        Err("Player not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn player_set_rotation(ctx: &ReducerContext, rotation: DbVector3) -> Result<(), String> {
+    if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
         player.rotation = rotation;
+        ctx.db.player().identity().update(player);
+        Ok(())
+    } else {
+        Err("Player not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn player_set_look_direction(
+    ctx: &ReducerContext,
+    look_direction: DbVector2,
+) -> Result<(), String> {
+    if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
         player.look_direction = look_direction;
+        ctx.db.player().identity().update(player);
+        Ok(())
+    } else {
+        Err("Player not found".to_string())
+    }
+}
+
+#[spacetimedb::reducer]
+pub fn player_set_animation_state(
+    ctx: &ReducerContext,
+    animation_state: DbAnimationState,
+) -> Result<(), String> {
+    if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
         player.animation_state = animation_state;
         ctx.db.player().identity().update(player);
         Ok(())
@@ -99,7 +170,7 @@ pub fn move_player(
 }
 
 #[spacetimedb::reducer]
-pub fn apply_damage(
+pub fn player_apply_damage(
     ctx: &ReducerContext,
     target_identity: Identity,
     damage: f32,
@@ -117,7 +188,7 @@ pub fn apply_damage(
 }
 
 #[spacetimedb::reducer]
-pub fn reset_player_health(ctx: &ReducerContext, target_identity: Identity) -> Result<(), String> {
+pub fn player_reset_health(ctx: &ReducerContext, target_identity: Identity) -> Result<(), String> {
     if let Some(mut player) = ctx.db.player().identity().find(&target_identity) {
         player.health = player.max_health;
         ctx.db.player().identity().update(player);

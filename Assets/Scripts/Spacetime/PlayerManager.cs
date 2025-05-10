@@ -64,6 +64,9 @@ public class PlayerManager : MonoBehaviour
 
         // Add subscription for online players
         ConnectionManager.Instance.AddSubscription("select * from player where online = true");
+
+        // Send a player connected reducer to the server
+        ConnectionManager.Conn.Reducers.PlayerConnected();
     }
 
     private void HandlePlayerJoined(EventContext context, Player playerData)

@@ -10,7 +10,7 @@ pub struct CreativeCamera {
     pub rotation: DbVector3,
 }
 
-pub fn create_creative_camera(ctx: &ReducerContext) -> Result<(), String> {
+pub fn creative_camera_create(ctx: &ReducerContext) -> Result<(), String> {
     ctx.db.creative_camera().insert(CreativeCamera {
         identity: ctx.sender,
         enabled: false,
@@ -21,18 +21,16 @@ pub fn create_creative_camera(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[spacetimedb::reducer]
-pub fn set_creative_camera_enabled(ctx: &ReducerContext, enabled: bool) -> Result<(), String> {
+pub fn creative_camera_set_enabled(ctx: &ReducerContext, enabled: bool) -> Result<(), String> {
     if let Some(mut creative_camera) = ctx.db.creative_camera().identity().find(ctx.sender) {
         creative_camera.enabled = enabled;
         ctx.db.creative_camera().identity().update(creative_camera);
-        Ok(())
-    } else {
-        Err("Creative camera not found".to_string())
     }
+    Ok(())
 }
 
 #[spacetimedb::reducer]
-pub fn move_creative_camera(
+pub fn creative_camera_move(
     ctx: &ReducerContext,
     position: DbVector3,
     rotation: DbVector3,

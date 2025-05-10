@@ -10,13 +10,6 @@ public class FlyCameraController : MonoBehaviour
     private float rotationX = 0f;
     private float rotationY = 0f;
 
-    private void Start()
-    {
-        // Lock and hide the cursor at start
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
     private void Update()
     {
         HandleMouseLook();
