@@ -1,3 +1,4 @@
+using QFSW.QC;
 using UnityEngine;
 
 public class FlyCameraController : MonoBehaviour
@@ -51,6 +52,8 @@ public class FlyCameraController : MonoBehaviour
 
     private void HandleMovement()
     {
+        if (QuantumConsole.Instance.IsActive) return;
+
         float currentMoveSpeed = Input.GetKey(KeyCode.LeftShift) ? fastMoveSpeed : moveSpeed;
 
         // Get input for movement

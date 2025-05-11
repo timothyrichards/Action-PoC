@@ -21,6 +21,7 @@ public class PlayerManager : MonoBehaviour
     }
 
     [Header("Runtime")]
+    public PlayerEntity localPlayer;
     public readonly Dictionary<Identity, PlayerEntity> playerObjects = new();
 
     [Header("References")]
@@ -112,8 +113,10 @@ public class PlayerManager : MonoBehaviour
         // If the player is the local player, enable input and camera
         if (player.IsLocalPlayer())
         {
+            localPlayer = player;
+
             // Enable input and third person controller for local player
-            player.SetInputEnabled(true);
+            player.SetInputState(true);
             player.input.enabled = true;
             player.controller.enabled = true;
 
@@ -130,7 +133,7 @@ public class PlayerManager : MonoBehaviour
         else
         {
             // Disable input and third person controller for other players
-            player.SetInputEnabled(false);
+            player.SetInputState(false);
             player.input.enabled = false;
             player.controller.enabled = false;
 

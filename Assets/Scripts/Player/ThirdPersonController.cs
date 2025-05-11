@@ -89,19 +89,11 @@ public class ThirdPersonController : MonoBehaviour
 
     private void OnLook(InputAction.CallbackContext context)
     {
-        if (!playerEntity.InputEnabled) return;
-
         // Skip camera input if cursor is unlocked
-        if (Cursor.lockState != CursorLockMode.Locked)
-        {
-            if (playerEntity.CameraFreeForm != null)
-                playerEntity.CameraFreeForm.enabled = false;
-
-            return;
-        }
-
         if (playerEntity.CameraFreeForm != null)
-            playerEntity.CameraFreeForm.enabled = true;
+            playerEntity.CameraFreeForm.enabled = Cursor.lockState == CursorLockMode.Locked;
+
+        if (!playerEntity.InputEnabled) return;
 
         lookInput = context.ReadValue<Vector2>();
 

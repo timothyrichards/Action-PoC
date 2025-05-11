@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using QFSW.QC;
 using SpacetimeDB;
@@ -132,17 +133,10 @@ public class PlayerEntity : Entity
 
     private void UpdateInputState()
     {
-        if (disableInputRequests.Count > 0)
-        {
-            SetInputEnabled(false);
-        }
-        else
-        {
-            SetInputEnabled(true);
-        }
+        SetInputState(disableInputRequests.Count == 0);
     }
 
-    public void SetInputEnabled(bool enabled)
+    public void SetInputState(bool enabled)
     {
         InputEnabled = enabled;
     }
