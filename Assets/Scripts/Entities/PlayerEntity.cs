@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using QFSW.QC;
 using SpacetimeDB;
@@ -8,6 +7,8 @@ using UnityEngine.InputSystem;
 
 public class PlayerEntity : Entity
 {
+    public static PlayerEntity LocalPlayer;
+
     [Header("Runtime")]
     private Vector3 currentVelocity;
     private FreeForm _cameraFreeForm;
@@ -48,7 +49,7 @@ public class PlayerEntity : Entity
     public float spineLerpSpeed = 8f;
 
     private QuantumConsole _quantumConsole;
-    private HashSet<object> disableInputRequests = new();
+    private readonly HashSet<object> disableInputRequests = new();
 
     protected override void Awake()
     {

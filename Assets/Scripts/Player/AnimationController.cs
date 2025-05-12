@@ -6,13 +6,15 @@ public class AnimationController : MonoBehaviour
     public float cameraPitch;
     public float yawDelta;
 
+    [Header("References")]
+    [SerializeField] private Animator animator;
+    [SerializeField] private Transform spineBone;
+
     [Header("Look Up/Down Settings")]
-    public Transform spineBone;
-    public float spineRotationMultiplier = 1.0f;
-    public float maxSpinePitch = 45f;
+    [SerializeField] private float spineRotationMultiplier = 1.0f;
+    [SerializeField] private float maxSpinePitch = 45f;
     public float maxSpineYaw = 30f;
 
-    private Animator animator;
     private int noMaskCombatLayerIndex;
     private int maskCombatLayerIndex;
     private float layerTransitionSpeed = 5f;

@@ -5,6 +5,8 @@ using SpacetimeDB.Types;
 
 public class BuildingSystem : MonoBehaviour
 {
+    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
+    public enum AnchorMode { Auto, Manual }
     private static BuildingSystem _instance;
     public static BuildingSystem Instance
     {
@@ -22,27 +24,22 @@ public class BuildingSystem : MonoBehaviour
     [Header("Runtime")]
     public bool IsEnabled { get; private set; } = false;
     public bool IsCreativeMode { get; private set; } = false;
+    [SerializeField] private BuildingPieceDatabase database;
 
     [Header("Building Settings")]
-    public float rotationStep = 15f;
-    public float gridSize = 1.0f;
-    public float anchorDetectionRadius = 2f;
+    [SerializeField] private float rotationStep = 15f;
+    [SerializeField] private float gridSize = 1.0f;
 
     [Header("Layers")]
-    public LayerMask placementLayerMask;
-    public LayerMask buildingLayerMask;
+    [SerializeField] private LayerMask placementLayerMask;
+    [SerializeField] private LayerMask buildingLayerMask;
 
     [Header("Materials")]
-    public Material validMaterial;
-    public Material invalidMaterial;
+    [SerializeField] private Material validMaterial;
+    [SerializeField] private Material invalidMaterial;
 
-    [Header("Prefabs")]
-    public BuildingPieceDatabase database;
-
-    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
-    public enum AnchorMode { Auto, Manual }
     private BuildingUI buildingUI;
-    private BuildingManager buildingSync;
+    private BuildingManager buildingManager;
     private BuildMode currentMode = BuildMode.None;
     private GameObject previewInstance;
     private BuildingPiece currentPrefab;
@@ -70,14 +67,14 @@ public class BuildingSystem : MonoBehaviour
         _instance = this;
     }
 
-    void Start()
+    private void Start()
     {
         buildingUI = FindAnyObjectByType<BuildingUI>();
-        buildingSync = GetComponent<BuildingManager>();
+        buildingManager = GetComponent<BuildingManager>();
         SetBuildMode(currentMode);
     }
 
-    void Update()
+    private void Update()
     {
         if (Input.GetKeyDown(KeyCode.B))
         {
@@ -399,7 +396,7 @@ public class BuildingSystem : MonoBehaviour
         // Sync the placed piece over the network
         if (currentPrefab.TryGetComponent(out BuildingPiece piece))
         {
-            buildingSync.BuildingPiecePlace(variantId, previewInstance);
+            buildingManager.BuildingPiecePlace(variantId, previewInstance);
         }
     }
 
@@ -439,9 +436,9 @@ public class BuildingSystem : MonoBehaviour
             {
                 // Try to remove the piece through BuildingSync
                 BuildingPiece piece = target.GetComponentInParent<BuildingPiece>();
-                if (piece != null && buildingSync != null)
+                if (piece != null && buildingManager != null)
                 {
-                    buildingSync.BuildingPieceRemove(piece.PieceId);
+                    buildingManager.BuildingPieceRemove(piece.PieceId);
                 }
 
                 highlightedObject = null;
@@ -487,7 +484,7 @@ public class BuildingSystem : MonoBehaviour
         }
     }
 
-    public Transform FindClosestAnchor(BuildingPiece piece, Vector3 point)
+    private Transform FindClosestAnchor(BuildingPiece piece, Vector3 point)
     {
         if (piece == null || piece.anchorPoints == null || piece.anchorPoints.Count == 0)
             return null;
@@ -588,12 +585,6 @@ public class BuildingSystem : MonoBehaviour
     public int GetCurrentAnchorIndex()
     {
         return anchorMode == AnchorMode.Auto ? -1 : currentAnchorIndex;
-    }
-
-    // Method to get the current anchor mode
-    public AnchorMode GetCurrentAnchorMode()
-    {
-        return anchorMode;
     }
 
     // Fire anchor changed event

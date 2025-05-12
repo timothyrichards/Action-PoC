@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class WeaponTwoHandIK : MonoBehaviour
 {
-    public Animator animator;
-    public Transform leftHandTarget;
+    [SerializeField] private Animator animator;
+    [SerializeField] private Transform leftHandTarget;
 
     void OnAnimatorIK(int layerIndex)
     {

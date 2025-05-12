@@ -1,41 +1,29 @@
 using SpacetimeDB.Types;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class CreativeMode : MonoBehaviour
 {
     [Header("References")]
-    public PlayerEntity playerEntity;
     public FlyCameraController flyingCamera;
 
     [Header("Interpolation Settings")]
-    private Vector3 currentVelocity;
     public Vector3 targetPosition;
     public Quaternion targetRotation;
-    public float positionSmoothTime = 0.15f;
-    public float rotationLerpSpeed = 8f;
+    [SerializeField] private float positionSmoothTime = 0.15f;
+    [SerializeField] private float rotationLerpSpeed = 8f;
+    [SerializeField] private Vector3 currentVelocity;
 
-    private void Awake()
+    private void Start()
     {
-        playerEntity = GetComponent<PlayerEntity>();
-    }
-
-    void Start()
-    {
-        if (!playerEntity.IsLocalPlayer())
+        var components = flyingCamera.GetComponents<Behaviour>();
+        foreach (var component in components)
         {
-            var components = flyingCamera.GetComponents<Behaviour>();
-            foreach (var component in components)
-            {
-                component.enabled = false;
-            }
+            component.enabled = false;
         }
     }
 
-    void Update()
+    private void Update()
     {
-        if (playerEntity.IsLocalPlayer()) return;
-
         var transform = flyingCamera.transform;
         var distance = Vector3.Distance(transform.position, targetPosition);
 
@@ -43,10 +31,8 @@ public class CreativeMode : MonoBehaviour
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationLerpSpeed * Time.deltaTime);
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        if (!playerEntity.IsLocalPlayer() || !flyingCamera.gameObject.activeSelf) return;
-
         var transform = flyingCamera.transform;
         ConnectionManager.Conn.Reducers.CreativeCameraMove(
             new DbVector3(transform.position.x, transform.position.y, transform.position.z),
@@ -54,7 +40,7 @@ public class CreativeMode : MonoBehaviour
         );
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         if (BuildingSystem.Instance.IsEnabled)
         {
@@ -64,9 +50,9 @@ public class CreativeMode : MonoBehaviour
         BuildingSystem.Instance.OnBuildingModeChanged += OnBuildingModeChanged;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        if (playerEntity.CameraFreeForm)
+        if (PlayerEntity.LocalPlayer.CameraFreeForm)
         {
             DisableCreativeMode();
         }
@@ -90,13 +76,11 @@ public class CreativeMode : MonoBehaviour
 
     private void EnableCreativeMode()
     {
-        if (!playerEntity.IsLocalPlayer()) return;
-
-        playerEntity.RequestInputDisabled(this);
-        playerEntity.CameraFreeForm.gameObject.SetActive(false);
+        PlayerEntity.LocalPlayer.RequestInputDisabled(this);
+        PlayerEntity.LocalPlayer.CameraFreeForm.gameObject.SetActive(false);
 
         flyingCamera.gameObject.SetActive(true);
-        flyingCamera.UpdateTransform(playerEntity.CameraFreeForm.transform.position, playerEntity.CameraFreeForm.transform.rotation);
+        flyingCamera.UpdateTransform(PlayerEntity.LocalPlayer.CameraFreeForm.transform.position, PlayerEntity.LocalPlayer.CameraFreeForm.transform.rotation);
 
         if (!ConnectionManager.IsConnected()) return;
 
@@ -105,12 +89,10 @@ public class CreativeMode : MonoBehaviour
 
     private void DisableCreativeMode()
     {
-        if (!playerEntity.IsLocalPlayer()) return;
-
         flyingCamera.gameObject.SetActive(false);
 
-        playerEntity.RequestInputEnabled(this);
-        playerEntity.CameraFreeForm.gameObject.SetActive(true);
+        PlayerEntity.LocalPlayer.RequestInputEnabled(this);
+        PlayerEntity.LocalPlayer.CameraFreeForm.gameObject.SetActive(true);
 
         if (!ConnectionManager.IsConnected()) return;
 

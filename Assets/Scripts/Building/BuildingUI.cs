@@ -8,30 +8,23 @@ using static BuildingSystem;
 public class BuildingUI : MonoBehaviour
 {
     [Header("Runtime")]
-    public GameObject buttonPrefab;
-    public TextMeshProUGUI currentAnchorText;
+    [SerializeField] private GameObject buttonPrefab;
+    [SerializeField] private TextMeshProUGUI currentAnchorText;
+    [SerializeField] private BuildingPieceDatabase database;
 
     [Header("UI References")]
-    public GameObject buildingUI;
-    public GameObject buildMenu;
-    public GameObject foundationPiecesPanel;
-    public GameObject floorPiecesPanel;
-    public GameObject wallPiecesPanel;
-    public GameObject stairsPiecesPanel;
-    public Button deleteButton;
+    [SerializeField] private GameObject buildingUI;
+    [SerializeField] private GameObject buildMenu;
+    [SerializeField] private GameObject foundationPiecesPanel;
+    [SerializeField] private GameObject floorPiecesPanel;
+    [SerializeField] private GameObject wallPiecesPanel;
+    [SerializeField] private GameObject stairsPiecesPanel;
+    [SerializeField] private Button deleteButton;
 
-    private BuildingSystem buildingSystem;
     private bool isPanelVisible = false;
-
-    // Add public getter for panel state
     public bool IsPanelOpen() => isPanelVisible;
 
-    void Awake()
-    {
-        buildingSystem = FindAnyObjectByType<BuildingSystem>();
-    }
-
-    void Start()
+    private void Start()
     {
         // Hide UI initially
         buildingUI.SetActive(false);
@@ -41,16 +34,16 @@ public class BuildingUI : MonoBehaviour
         SetupButtons();
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
-        buildingSystem.OnBuildingModeChanged += HandleBuildModeChanged;
-        buildingSystem.OnAnchorChanged += HandleAnchorChanged;
+        BuildingSystem.Instance.OnBuildingModeChanged += HandleBuildModeChanged;
+        BuildingSystem.Instance.OnAnchorChanged += HandleAnchorChanged;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        buildingSystem.OnBuildingModeChanged -= HandleBuildModeChanged;
-        buildingSystem.OnAnchorChanged -= HandleAnchorChanged;
+        BuildingSystem.Instance.OnBuildingModeChanged -= HandleBuildModeChanged;
+        BuildingSystem.Instance.OnAnchorChanged -= HandleAnchorChanged;
     }
 
     private void HandleBuildModeChanged(bool inBuildMode)
@@ -63,10 +56,10 @@ public class BuildingUI : MonoBehaviour
         currentAnchorText.text = "Current Anchor: " + anchorName;
     }
 
-    void Update()
+    private void Update()
     {
         // Only allow toggling piecesPanel if in build mode
-        if (buildingSystem.IsEnabled && Input.GetMouseButtonDown(1))
+        if (BuildingSystem.Instance.IsEnabled && Input.GetMouseButtonDown(1))
         {
             ToggleBuildMenuPanel();
         }
@@ -85,7 +78,7 @@ public class BuildingUI : MonoBehaviour
                 _ => throw new NotImplementedException(),
             };
 
-            var pieces = buildingSystem.database.GetPrefabsByType(type);
+            var pieces = database.GetPrefabsByType(type);
             foreach (var piece in pieces)
             {
                 var index = pieces.IndexOf(piece);
@@ -99,15 +92,15 @@ public class BuildingUI : MonoBehaviour
         deleteButton?.onClick.AddListener(() => SwitchToBuildMode(BuildMode.Delete, null));
     }
 
-    public void SwitchToBuildMode(BuildMode mode, BuildingPiece piece)
+    private void SwitchToBuildMode(BuildMode mode, BuildingPiece piece)
     {
         if (piece)
         {
-            buildingSystem.SetBuildMode(mode, piece.pieceType, piece.variantId);
+            BuildingSystem.Instance.SetBuildMode(mode, piece.pieceType, piece.variantId);
         }
         else
         {
-            buildingSystem.SetBuildMode(mode);
+            BuildingSystem.Instance.SetBuildMode(mode);
         }
 
         CloseBuildingPanel();

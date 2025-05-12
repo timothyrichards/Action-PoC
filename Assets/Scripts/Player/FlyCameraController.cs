@@ -3,13 +3,15 @@ using UnityEngine;
 
 public class FlyCameraController : MonoBehaviour
 {
+    [Header("Runtime")]
+    [SerializeField] private float rotationX = 0f;
+    [SerializeField] private float rotationY = 0f;
+
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 10f;
     [SerializeField] private float fastMoveSpeed = 20f;
     [SerializeField] private float mouseSensitivity = 2f;
 
-    private float rotationX = 0f;
-    private float rotationY = 0f;
 
     private void Update()
     {

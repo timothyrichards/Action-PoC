@@ -3,11 +3,14 @@ using System.Collections.Generic;
 
 public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
 {
-    public Entity wielder;
-    public float damage = 25f;
-    public LayerMask entityLayer;
-    public List<Collider> hitboxColliders = new();
-    private bool hitboxActive = false;
+    [Header("Runtime")]
+    [SerializeField] private Entity wielder;
+    [SerializeField] private bool hitboxActive = false;
+
+    [Header("Settings")]
+    [SerializeField] private float damage = 25f;
+    [SerializeField] private LayerMask entityLayer;
+    [SerializeField] private List<Collider> hitboxColliders = new();
     private HashSet<Entity> damagedEntities = new();
 
     private void Awake()

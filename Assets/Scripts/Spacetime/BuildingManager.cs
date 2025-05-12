@@ -4,8 +4,7 @@ using System.Collections.Generic;
 
 public class BuildingManager : MonoBehaviour
 {
-    [SerializeField]
-    private BuildingPieceDatabase buildingPieceDatabase;
+    [SerializeField] private BuildingPieceDatabase buildingPieceDatabase;
     private BuildingSystem buildingSystem;
     private Dictionary<uint, GameObject> spawnedPieces = new Dictionary<uint, GameObject>();
 

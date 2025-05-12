@@ -8,15 +8,11 @@ public class ConnectionManager : MonoBehaviour
     const string SERVER_URL = "https://maincloud.spacetimedb.com";
     const string MODULE_NAME = "sandbox";
 
-    public static event Action OnConnected;
-    public static event Action OnSubscriptionApplied;
-
-    public float borderThickness = 2;
-    public Material borderMaterial;
-
     public static ConnectionManager Instance { get; private set; }
     public static Identity LocalIdentity { get; private set; }
     public static DbConnection Conn { get; private set; }
+    public static event Action OnConnected;
+    public static event Action OnSubscriptionApplied;
 
     private SubscriptionBuilder _subscriptionBuilder;
 

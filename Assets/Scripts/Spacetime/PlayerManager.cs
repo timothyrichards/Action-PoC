@@ -21,13 +21,12 @@ public class PlayerManager : MonoBehaviour
     }
 
     [Header("Runtime")]
-    public PlayerEntity localPlayer;
     public readonly Dictionary<Identity, PlayerEntity> playerObjects = new();
 
     [Header("References")]
-    public GameObject playerPrefab;
-    public CameraController playerCamera;
-    public HealthDisplay playerHealthDisplay;
+    [SerializeField] private GameObject playerPrefab;
+    [SerializeField] private CameraController playerCamera;
+    [SerializeField] private HealthDisplay playerHealthDisplay;
 
     private void OnEnable()
     {
@@ -113,7 +112,7 @@ public class PlayerManager : MonoBehaviour
         // If the player is the local player, enable input and camera
         if (player.IsLocalPlayer())
         {
-            localPlayer = player;
+            PlayerEntity.LocalPlayer = player;
 
             // Enable input and third person controller for local player
             player.SetInputState(true);

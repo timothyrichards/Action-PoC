@@ -8,16 +8,16 @@ public class ThirdPersonController : MonoBehaviour
 {
     [Header("Runtime")]
     public PlayerEntity playerEntity;
+    public Transform cameraTransform;
     public bool movingPlayer = false;
 
     [Header("Movement Settings")]
-    public float moveSpeed = 5f;
-    public float rotationSpeed = 10f;
-    public float jumpHeight = 2f;
-    public float gravity = -9.81f;
-    public float acceleration = 10f;
-    public float deceleration = 8f;
-    public Transform cameraTransform;
+    [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float rotationSpeed = 10f;
+    [SerializeField] private float jumpHeight = 2f;
+    [SerializeField] private float gravity = -9.81f;
+    [SerializeField] private float acceleration = 10f;
+    [SerializeField] private float deceleration = 8f;
 
     private CharacterController controller;
     private PlayerInputActions inputActions;
@@ -118,6 +118,7 @@ public class ThirdPersonController : MonoBehaviour
             currentMovement = Vector3.zero;
             playerEntity.animController.SetMovementAnimation(Vector2.zero, false);
             playerEntity.animController.UpdateCombatLayerWeight(false, IsGrounded);
+            controller.Move(new Vector3(0, velocity.y, 0) * Time.deltaTime);
             return;
         }
 
@@ -163,10 +164,10 @@ public class ThirdPersonController : MonoBehaviour
             playerEntity.animController.yawDelta = CalculateYawDelta();
         }
 
+        // Apply gravity regardless of input state
         if (!IsGrounded)
         {
             velocity.y += gravity * Time.deltaTime;
-            controller.Move(velocity * Time.deltaTime);
         }
     }
 
@@ -225,8 +226,6 @@ public class ThirdPersonController : MonoBehaviour
         float accelerationToUse = targetMovement.magnitude > 0.01f ? acceleration : deceleration;
         currentMovement = Vector3.Lerp(currentMovement, targetMovement, accelerationToUse * Time.deltaTime);
 
-        controller.Move(currentMovement * Time.deltaTime);
-
         if (jumpQueued)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
@@ -234,7 +233,9 @@ public class ThirdPersonController : MonoBehaviour
             jumpQueued = false;
         }
 
-        controller.Move(velocity * Time.deltaTime);
+        // Combine horizontal movement and vertical velocity into a single movement vector
+        Vector3 finalMovement = currentMovement + velocity;
+        controller.Move(finalMovement * Time.deltaTime);
     }
 
     [Command]
