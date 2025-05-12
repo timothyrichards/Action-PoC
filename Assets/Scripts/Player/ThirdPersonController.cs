@@ -29,6 +29,7 @@ public class ThirdPersonController : MonoBehaviour
     private bool IsTurning => Mathf.Abs(CalculateYawDelta()) > playerEntity.animController.maxSpineYaw;
     private bool IsGrounded => controller.isGrounded;
     private bool jumpQueued;
+    private DbAnimationState lastAnimationState;
 
     private void Awake()
     {
@@ -127,32 +128,32 @@ public class ThirdPersonController : MonoBehaviour
 
         playerEntity.animController.SetMovementAnimation(moveInput, IsMoving);
         playerEntity.animController.UpdateCombatLayerWeight(IsMoving, IsGrounded);
-    }
 
-    private void FixedUpdate()
-    {
         if (movingPlayer) return;
-
         if (!ConnectionManager.IsConnected()) return;
-
         if (!playerEntity.IsLocalPlayer()) return;
 
         float cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
         float yawDelta = CalculateYawDelta();
 
-        ConnectionManager.Conn.Reducers.PlayerUpdate(
-            new DbVector3(transform.position.x, transform.position.y, transform.position.z),
-            new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z),
-            new DbVector2(cameraPitch, yawDelta),
-            new DbAnimationState(
-                moveInput.x,
-                moveInput.y,
-                yawDelta,
-                IsMoving,
-                playerEntity.animController.IsTurning,
-                playerEntity.animController.IsJumping,
-                playerEntity.animController.IsAttacking
-            )
+        var position = new DbVector3(transform.position.x, transform.position.y, transform.position.z);
+        var rotation = new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z);
+        var lookDirection = new DbVector2(cameraPitch, yawDelta);
+        var animState = new DbAnimationState(
+            moveInput.x,
+            moveInput.y,
+            yawDelta,
+            IsMoving,
+            playerEntity.animController.IsTurning,
+            playerEntity.animController.IsJumping,
+            playerEntity.animController.IsAttacking,
+            (uint)playerEntity.animController.ComboCount
+        );
+
+        ReducerMiddleware.Instance.CallReducer<object[]>(
+            "PlayerUpdate",
+            _ => ConnectionManager.Conn.Reducers.PlayerUpdate(position, rotation, lookDirection, animState),
+            position, rotation, lookDirection, animState
         );
     }
 

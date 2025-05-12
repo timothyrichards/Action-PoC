@@ -52,6 +52,10 @@ public class ConnectionManager : MonoBehaviour
         AuthToken.SaveToken(token);
         LocalIdentity = identity;
 
+        // Initialize the ReducerMiddleware
+        ReducerMiddleware.Instance.Initialize(Conn.Reducers);
+        Debug.Log("ReducerMiddleware initialized");
+
         // Request relevant tables
         _subscriptionBuilder = Conn.SubscriptionBuilder().OnApplied(HandleSubscriptionApplied);
 

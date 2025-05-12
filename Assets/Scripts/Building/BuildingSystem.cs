@@ -54,8 +54,8 @@ public class BuildingSystem : MonoBehaviour
     private Transform lastTargetAnchor = null;
     private Vector3 lastHitNormal = Vector3.up;
     private AnchorMode anchorMode = AnchorMode.Auto;
-    public event Action<bool> OnBuildingModeChanged;
-    public event Action<AnchorMode, string> OnAnchorChanged;
+    public static event Action<bool> OnBuildingModeChanged;
+    public static event Action<AnchorMode, string> OnAnchorChanged;
 
     private void Awake()
     {

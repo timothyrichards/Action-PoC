@@ -15,9 +15,16 @@ public class AnimationController : MonoBehaviour
     [SerializeField] private float maxSpinePitch = 45f;
     public float maxSpineYaw = 30f;
 
+    [Header("Combat Settings")]
+    [SerializeField] private float comboWindowTime = 1.0f;
+    [SerializeField] private int maxComboCount = 3;
+
     private int noMaskCombatLayerIndex;
     private int maskCombatLayerIndex;
     private float layerTransitionSpeed = 5f;
+    private int currentCombo = 0;
+    private float lastAttackTime;
+    private bool canContinueCombo = true;
 
     // Animation parameter hashes
     private readonly int horizontalHash = Animator.StringToHash("Horizontal");
@@ -27,11 +34,14 @@ public class AnimationController : MonoBehaviour
     private readonly int isTurningHash = Animator.StringToHash("Turning");
     private readonly int jumpHash = Animator.StringToHash("Jump");
     private readonly int attackHash = Animator.StringToHash("Attack");
+    private readonly int comboCountHash = Animator.StringToHash("ComboCount");
+    // private readonly int resetComboHash = Animator.StringToHash("ResetCombo");
 
     public bool IsMoving => animator.GetBool(isWalkingHash);
     public bool IsTurning => animator.GetBool(isTurningHash);
     public bool IsJumping => animator.GetBool(jumpHash);
     public bool IsAttacking => animator.GetBool(attackHash);
+    public int ComboCount => animator.GetInteger(comboCountHash);
 
     private void Awake()
     {
@@ -84,7 +94,41 @@ public class AnimationController : MonoBehaviour
 
     public void TriggerAttack()
     {
-        animator.SetTrigger(attackHash);
+        // If we're outside the combo window, reset the combo
+        if (Time.time - lastAttackTime > comboWindowTime)
+        {
+            ResetCombo();
+        }
+
+        // Only proceed if we can continue the combo
+        if (currentCombo < maxComboCount && canContinueCombo)
+        {
+            animator.SetTrigger(attackHash);
+            animator.SetInteger(comboCountHash, currentCombo);
+            DisableComboWindow();
+            lastAttackTime = Time.time;
+            currentCombo++;
+        }
+    }
+
+    public void EnableComboWindow()
+    {
+        // Called via Animation Event when we can start the next attack
+        canContinueCombo = true;
+    }
+
+    public void DisableComboWindow()
+    {
+        // Called via Animation Event when we can no longer combo
+        canContinueCombo = false;
+    }
+
+    private void ResetCombo()
+    {
+        currentCombo = 0;
+        canContinueCombo = true;
+        animator.SetInteger(comboCountHash, 0);
+        // animator.SetTrigger(resetComboHash);
     }
 
     public void UpdateCombatLayerWeight(bool isMoving, bool isGrounded)
@@ -99,5 +143,14 @@ public class AnimationController : MonoBehaviour
 
         animator.SetLayerWeight(noMaskCombatLayerIndex, newNoMaskWeight);
         animator.SetLayerWeight(maskCombatLayerIndex, newMaskWeight);
+    }
+
+    private void Update()
+    {
+        // Check if combo window has expired
+        if (Time.time - lastAttackTime > comboWindowTime && currentCombo > 0)
+        {
+            ResetCombo();
+        }
     }
 }

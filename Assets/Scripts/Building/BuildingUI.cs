@@ -36,14 +36,14 @@ public class BuildingUI : MonoBehaviour
 
     private void OnEnable()
     {
-        BuildingSystem.Instance.OnBuildingModeChanged += HandleBuildModeChanged;
-        BuildingSystem.Instance.OnAnchorChanged += HandleAnchorChanged;
+        BuildingSystem.OnBuildingModeChanged += HandleBuildModeChanged;
+        BuildingSystem.OnAnchorChanged += HandleAnchorChanged;
     }
 
     private void OnDisable()
     {
-        BuildingSystem.Instance.OnBuildingModeChanged -= HandleBuildModeChanged;
-        BuildingSystem.Instance.OnAnchorChanged -= HandleAnchorChanged;
+        BuildingSystem.OnBuildingModeChanged -= HandleBuildModeChanged;
+        BuildingSystem.OnAnchorChanged -= HandleAnchorChanged;
     }
 
     private void HandleBuildModeChanged(bool inBuildMode)

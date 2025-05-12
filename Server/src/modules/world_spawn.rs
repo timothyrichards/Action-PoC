@@ -38,9 +38,9 @@ pub fn world_spawn_set(
         ctx.db.world_spawn().insert(WorldSpawn {
             id: 0,
             position: DbVector3 {
-                x: 0.0,
-                y: 2.0,
-                z: 0.0,
+                x: 110.0,
+                y: 167.0,
+                z: -263.0,
             },
             rotation: DbVector3::default(),
         });

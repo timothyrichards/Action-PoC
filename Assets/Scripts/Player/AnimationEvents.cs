@@ -3,6 +3,7 @@ using UnityEngine;
 public class AnimationEvents : MonoBehaviour
 {
     public WeaponHitbox weaponHitbox;
+    public AnimationController animationController;
 
     public void ActivateHitbox()
     {
@@ -12,5 +13,15 @@ public class AnimationEvents : MonoBehaviour
     public void DeactivateHitbox()
     {
         weaponHitbox.DeactivateHitbox();
+    }
+
+    public void EnableComboWindow()
+    {
+        animationController.EnableComboWindow();
+    }
+
+    public void DisableComboWindow()
+    {
+        animationController.DisableComboWindow();
     }
 }

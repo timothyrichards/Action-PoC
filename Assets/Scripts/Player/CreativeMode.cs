@@ -4,6 +4,7 @@ using UnityEngine;
 public class CreativeMode : MonoBehaviour
 {
     [Header("References")]
+    public PlayerEntity playerEntity;
     public FlyCameraController flyingCamera;
 
     [Header("Interpolation Settings")]
@@ -13,8 +14,15 @@ public class CreativeMode : MonoBehaviour
     [SerializeField] private float rotationLerpSpeed = 8f;
     [SerializeField] private Vector3 currentVelocity;
 
+    private void Awake()
+    {
+        playerEntity = GetComponent<PlayerEntity>();
+    }
+
     private void Start()
     {
+        if (playerEntity.IsLocalPlayer()) return;
+
         var components = flyingCamera.GetComponents<Behaviour>();
         foreach (var component in components)
         {
@@ -25,19 +33,23 @@ public class CreativeMode : MonoBehaviour
     private void Update()
     {
         var transform = flyingCamera.transform;
-        var distance = Vector3.Distance(transform.position, targetPosition);
+        if (playerEntity.IsLocalPlayer() && flyingCamera.gameObject.activeSelf)
+        {
+            var position = new DbVector3(transform.position.x, transform.position.y, transform.position.z);
+            var rotation = new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z);
 
+            ReducerMiddleware.Instance.CallReducer<object[]>(
+                "CreativeCameraMove",
+                _ => ConnectionManager.Conn.Reducers.CreativeCameraMove(position, rotation),
+                position, rotation
+            );
+
+            return;
+        }
+
+        var distance = Vector3.Distance(transform.position, targetPosition);
         transform.position = distance > 5f ? targetPosition : Vector3.SmoothDamp(transform.position, targetPosition, ref currentVelocity, positionSmoothTime);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationLerpSpeed * Time.deltaTime);
-    }
-
-    private void FixedUpdate()
-    {
-        var transform = flyingCamera.transform;
-        ConnectionManager.Conn.Reducers.CreativeCameraMove(
-            new DbVector3(transform.position.x, transform.position.y, transform.position.z),
-            new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z)
-        );
     }
 
     private void OnEnable()
@@ -47,7 +59,7 @@ public class CreativeMode : MonoBehaviour
             EnableCreativeMode();
         }
 
-        BuildingSystem.Instance.OnBuildingModeChanged += OnBuildingModeChanged;
+        BuildingSystem.OnBuildingModeChanged += OnBuildingModeChanged;
     }
 
     private void OnDisable()
@@ -57,9 +69,7 @@ public class CreativeMode : MonoBehaviour
             DisableCreativeMode();
         }
 
-        if (!BuildingSystem.Instance) return;
-
-        BuildingSystem.Instance.OnBuildingModeChanged -= OnBuildingModeChanged;
+        BuildingSystem.OnBuildingModeChanged -= OnBuildingModeChanged;
     }
 
     private void OnBuildingModeChanged(bool isBuilding)
@@ -76,6 +86,8 @@ public class CreativeMode : MonoBehaviour
 
     private void EnableCreativeMode()
     {
+        if (!playerEntity.IsLocalPlayer()) return;
+
         PlayerEntity.LocalPlayer.RequestInputDisabled(this);
         PlayerEntity.LocalPlayer.CameraFreeForm.gameObject.SetActive(false);
 
@@ -89,6 +101,8 @@ public class CreativeMode : MonoBehaviour
 
     private void DisableCreativeMode()
     {
+        if (!playerEntity.IsLocalPlayer()) return;
+
         flyingCamera.gameObject.SetActive(false);
 
         PlayerEntity.LocalPlayer.RequestInputEnabled(this);

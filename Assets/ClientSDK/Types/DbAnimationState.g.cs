@@ -27,6 +27,8 @@ namespace SpacetimeDB.Types
         public bool IsJumping;
         [DataMember(Name = "is_attacking")]
         public bool IsAttacking;
+        [DataMember(Name = "combo_count")]
+        public uint ComboCount;
 
         public DbAnimationState(
             float HorizontalMovement,
@@ -35,7 +37,8 @@ namespace SpacetimeDB.Types
             bool IsMoving,
             bool IsTurning,
             bool IsJumping,
-            bool IsAttacking
+            bool IsAttacking,
+            uint ComboCount
         )
         {
             this.HorizontalMovement = HorizontalMovement;
@@ -45,6 +48,7 @@ namespace SpacetimeDB.Types
             this.IsTurning = IsTurning;
             this.IsJumping = IsJumping;
             this.IsAttacking = IsAttacking;
+            this.ComboCount = ComboCount;
         }
 
         public DbAnimationState()

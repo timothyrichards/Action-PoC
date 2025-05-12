@@ -12,6 +12,7 @@ pub struct DbAnimationState {
     pub is_turning: bool,
     pub is_jumping: bool,
     pub is_attacking: bool,
+    pub combo_count: u32,
 }
 
 #[spacetimedb::table(name = player, public)]
@@ -64,6 +65,7 @@ pub fn player_create(ctx: &ReducerContext) -> Result<(), String> {
             is_turning: false,
             is_jumping: false,
             is_attacking: false,
+            combo_count: 0,
         },
         health: 100.0,
         max_health: 100.0,
