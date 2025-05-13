@@ -42,7 +42,7 @@ public class CreativeCameraManager : MonoBehaviour
     {
         if (PlayerManager.Instance.playerObjects.TryGetValue(creativeCamera.Identity, out PlayerEntity playerEntity))
         {
-            UpdateFromCreativeCamera(playerEntity, creativeCamera, true);
+            playerEntity.UpdateFromCreativeCameraData(creativeCamera);
         }
     }
 
@@ -50,19 +50,7 @@ public class CreativeCameraManager : MonoBehaviour
     {
         if (PlayerManager.Instance.playerObjects.TryGetValue(newData.Identity, out PlayerEntity playerEntity))
         {
-            UpdateFromCreativeCamera(playerEntity, newData, oldData.Enabled != newData.Enabled);
+            playerEntity.UpdateFromCreativeCameraData(newData);
         }
-    }
-
-    public void UpdateFromCreativeCamera(PlayerEntity playerEntity, CreativeCamera creativeCamera, bool instantUpdate = false)
-    {
-        if (playerEntity.IsLocalPlayer()) return;
-
-        var creativeMode = playerEntity.creativeMode;
-        var flyingCamera = creativeMode.flyingCamera;
-
-        creativeMode.targetPosition = new Vector3(creativeCamera.Position.X, creativeCamera.Position.Y, creativeCamera.Position.Z);
-        creativeMode.targetRotation = Quaternion.Euler(creativeCamera.Rotation.X, creativeCamera.Rotation.Y, creativeCamera.Rotation.Z);
-        flyingCamera.gameObject.SetActive(creativeCamera.Enabled);
     }
 }

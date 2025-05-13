@@ -1,4 +1,5 @@
 use crate::modules::creative_camera::{creative_camera_create, creative_camera_set_enabled};
+use crate::modules::inventory::inventory_create;
 use crate::modules::world_spawn::world_spawn;
 use crate::types::{DbVector2, DbVector3};
 use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table};
@@ -98,6 +99,7 @@ pub fn player_connected(ctx: &ReducerContext) -> Result<(), String> {
     } else {
         player_create(ctx)?;
         creative_camera_create(ctx)?;
+        inventory_create(ctx)?;
     }
     Ok(())
 }
@@ -177,15 +179,25 @@ pub fn player_apply_damage(
     target_identity: Identity,
     damage: f32,
 ) -> Result<(), String> {
-    if let Some(mut player) = ctx.db.player().identity().find(&target_identity) {
-        player.health -= damage;
-        if player.health < 0.0 {
-            player.health = 0.0;
+    // Validate that the attacker exists and is online
+    if let Some(attacker) = ctx.db.player().identity().find(&ctx.sender) {
+        if !attacker.online {
+            return Err("Attacker is not online".to_string());
         }
-        ctx.db.player().identity().update(player);
-        Ok(())
+
+        // Apply damage to target
+        if let Some(mut target) = ctx.db.player().identity().find(&target_identity) {
+            target.health -= damage;
+            if target.health < 0.0 {
+                target.health = 0.0;
+            }
+            ctx.db.player().identity().update(target);
+            Ok(())
+        } else {
+            Err("Target player not found".to_string())
+        }
     } else {
-        Err("Player not found".to_string())
+        Err("Attacker not found".to_string())
     }
 }
 

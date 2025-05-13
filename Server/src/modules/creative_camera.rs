@@ -11,12 +11,13 @@ pub struct CreativeCamera {
 }
 
 pub fn creative_camera_create(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.db.creative_camera().insert(CreativeCamera {
+    let creative_camera = CreativeCamera {
         identity: ctx.sender,
         enabled: false,
         position: DbVector3::default(),
         rotation: DbVector3::default(),
-    });
+    };
+    ctx.db.creative_camera().insert(creative_camera);
     Ok(())
 }
 

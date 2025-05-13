@@ -23,6 +23,8 @@ namespace SpacetimeDB.Types
             AddTable(BuildingPiecePlaced = new(conn));
             AddTable(BuildingPieceVariant = new(conn));
             AddTable(CreativeCamera = new(conn));
+            AddTable(Inventory = new(conn));
+            AddTable(Item = new(conn));
             AddTable(Player = new(conn));
             AddTable(WorldSpawn = new(conn));
         }
@@ -439,6 +441,9 @@ namespace SpacetimeDB.Types
                 "creative_camera_move" => BSATNHelpers.Decode<Reducer.CreativeCameraMove>(encodedArgs),
                 "creative_camera_set_enabled" => BSATNHelpers.Decode<Reducer.CreativeCameraSetEnabled>(encodedArgs),
                 "disconnect" => BSATNHelpers.Decode<Reducer.Disconnect>(encodedArgs),
+                "inventory_add_item" => BSATNHelpers.Decode<Reducer.InventoryAddItem>(encodedArgs),
+                "inventory_create" => BSATNHelpers.Decode<Reducer.InventoryCreate>(encodedArgs),
+                "inventory_remove_item" => BSATNHelpers.Decode<Reducer.InventoryRemoveItem>(encodedArgs),
                 "player_apply_damage" => BSATNHelpers.Decode<Reducer.PlayerApplyDamage>(encodedArgs),
                 "player_connected" => BSATNHelpers.Decode<Reducer.PlayerConnected>(encodedArgs),
                 "player_reset_health" => BSATNHelpers.Decode<Reducer.PlayerResetHealth>(encodedArgs),
@@ -475,6 +480,9 @@ namespace SpacetimeDB.Types
                 Reducer.CreativeCameraMove args => Reducers.InvokeCreativeCameraMove(eventContext, args),
                 Reducer.CreativeCameraSetEnabled args => Reducers.InvokeCreativeCameraSetEnabled(eventContext, args),
                 Reducer.Disconnect args => Reducers.InvokeDisconnect(eventContext, args),
+                Reducer.InventoryAddItem args => Reducers.InvokeInventoryAddItem(eventContext, args),
+                Reducer.InventoryCreate args => Reducers.InvokeInventoryCreate(eventContext, args),
+                Reducer.InventoryRemoveItem args => Reducers.InvokeInventoryRemoveItem(eventContext, args),
                 Reducer.PlayerApplyDamage args => Reducers.InvokePlayerApplyDamage(eventContext, args),
                 Reducer.PlayerConnected args => Reducers.InvokePlayerConnected(eventContext, args),
                 Reducer.PlayerResetHealth args => Reducers.InvokePlayerResetHealth(eventContext, args),

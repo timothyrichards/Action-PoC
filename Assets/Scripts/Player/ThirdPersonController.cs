@@ -7,9 +7,10 @@ using QFSW.QC;
 public class ThirdPersonController : MonoBehaviour
 {
     [Header("Runtime")]
-    public PlayerEntity playerEntity;
+    [SerializeField] private PlayerEntity playerEntity;
+    [SerializeField] private CharacterController controller;
     public Transform cameraTransform;
-    public bool movingPlayer = false;
+    [SerializeField] private bool movingPlayer = false;
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
@@ -19,7 +20,6 @@ public class ThirdPersonController : MonoBehaviour
     [SerializeField] private float acceleration = 10f;
     [SerializeField] private float deceleration = 8f;
 
-    private CharacterController controller;
     private PlayerInputActions inputActions;
     private Vector2 moveInput;
     private Vector2 lookInput;

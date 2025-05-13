@@ -9,6 +9,11 @@ public abstract class Entity : MonoBehaviour
         HealthComponent = GetComponent<HealthComponent>();
     }
 
+    public virtual void Attack(Entity target, float damage)
+    {
+        target.TakeDamage(damage);
+    }
+
     public virtual void TakeDamage(float damage)
     {
         HealthComponent.TakeDamage(damage);

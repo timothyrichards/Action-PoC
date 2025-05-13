@@ -71,7 +71,8 @@ public class WeaponHitbox : MonoBehaviour, IHitboxReceiver
             Entity entity = other.GetComponent<Entity>();
             if (entity != null && !damagedEntities.Contains(entity))
             {
-                entity.TakeDamage(damage);
+                Debug.Log($"Attacking {entity.name} with {damage} damage");
+                wielder.Attack(entity, damage);
                 damagedEntities.Add(entity);
             }
         }

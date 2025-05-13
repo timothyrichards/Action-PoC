@@ -27,15 +27,14 @@ pub fn building_piece_place(
     position: DbVector3,
     rotation: DbVector3,
 ) -> Result<(), String> {
-    ctx.db
-        .building_piece_placed()
-        .insert(DbBuildingPiecePlaced {
-            piece_id: 0,
-            owner: ctx.sender,
-            variant_id,
-            position,
-            rotation,
-        });
+    let piece = DbBuildingPiecePlaced {
+        piece_id: 0,
+        owner: ctx.sender,
+        variant_id,
+        position,
+        rotation,
+    };
+    ctx.db.building_piece_placed().insert(piece);
     Ok(())
 }
 
