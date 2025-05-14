@@ -3,7 +3,6 @@ using SpacetimeDB.Types;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using static BuildingSystem;
 
 public class BuildingUI : MonoBehaviour
 {

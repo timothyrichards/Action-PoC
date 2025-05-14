@@ -40,7 +40,7 @@ public class CreativeMode : MonoBehaviour
 
             ReducerMiddleware.Instance.CallReducer<object[]>(
                 "CreativeCameraMove",
-                _ => ConnectionManager.Conn.Reducers.CreativeCameraMove(position, rotation),
+                _ => SpacetimeManager.Conn.Reducers.CreativeCameraMove(position, rotation),
                 position, rotation
             );
 
@@ -94,9 +94,9 @@ public class CreativeMode : MonoBehaviour
         flyingCamera.gameObject.SetActive(true);
         flyingCamera.UpdateTransform(PlayerEntity.LocalPlayer.CameraFreeForm.transform.position, PlayerEntity.LocalPlayer.CameraFreeForm.transform.rotation);
 
-        if (!ConnectionManager.IsConnected()) return;
+        if (!SpacetimeManager.IsConnected()) return;
 
-        ConnectionManager.Conn.Reducers.CreativeCameraSetEnabled(true);
+        SpacetimeManager.Conn.Reducers.CreativeCameraSetEnabled(true);
     }
 
     private void DisableCreativeMode()
@@ -108,8 +108,8 @@ public class CreativeMode : MonoBehaviour
         PlayerEntity.LocalPlayer.RequestInputEnabled(this);
         PlayerEntity.LocalPlayer.CameraFreeForm.gameObject.SetActive(true);
 
-        if (!ConnectionManager.IsConnected()) return;
+        if (!SpacetimeManager.IsConnected()) return;
 
-        ConnectionManager.Conn.Reducers.CreativeCameraSetEnabled(false);
+        SpacetimeManager.Conn.Reducers.CreativeCameraSetEnabled(false);
     }
 }

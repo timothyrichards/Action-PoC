@@ -20,7 +20,7 @@ namespace SpacetimeDB.Types
         [DataMember(Name = "variant_name")]
         public string VariantName;
         [DataMember(Name = "build_cost")]
-        public uint BuildCost;
+        public System.Collections.Generic.List<DbBuildingCost> BuildCost;
         [DataMember(Name = "max_health")]
         public float MaxHealth;
 
@@ -28,7 +28,7 @@ namespace SpacetimeDB.Types
             uint VariantId,
             DbBuildingPieceType PieceType,
             string VariantName,
-            uint BuildCost,
+            System.Collections.Generic.List<DbBuildingCost> BuildCost,
             float MaxHealth
         )
         {
@@ -42,6 +42,7 @@ namespace SpacetimeDB.Types
         public DbBuildingPieceVariant()
         {
             this.VariantName = "";
+            this.BuildCost = new();
         }
     }
 }

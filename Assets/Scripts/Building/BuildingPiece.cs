@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using SpacetimeDB.Types;
+
 public class BuildingPiece : MonoBehaviour
 {
     public uint PieceId { get; set; }

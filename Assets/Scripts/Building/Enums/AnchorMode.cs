@@ -1,0 +1,1 @@
+public enum AnchorMode { Auto, Manual }

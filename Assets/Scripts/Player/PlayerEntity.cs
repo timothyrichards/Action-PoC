@@ -256,20 +256,20 @@ public class PlayerEntity : Entity
 
     public bool IsLocalPlayer()
     {
-        if (ConnectionManager.LocalIdentity == null)
+        if (SpacetimeManager.LocalIdentity == null)
         {
             Debug.LogWarning("Could not determine if player is local because no local identity found in ConnectionManager.");
             return true;
         }
 
-        return ownerIdentity.Equals(ConnectionManager.LocalIdentity);
+        return ownerIdentity.Equals(SpacetimeManager.LocalIdentity);
     }
 
     public override void Attack(Entity target, float damage)
     {
         if (IsLocalPlayer() && target is PlayerEntity playerTarget)
         {
-            ConnectionManager.Conn.Reducers.PlayerApplyDamage(playerTarget.ownerIdentity, damage);
+            SpacetimeManager.Conn.Reducers.PlayerApplyDamage(playerTarget.ownerIdentity, damage);
             return;
         }
 
@@ -285,7 +285,7 @@ public class PlayerEntity : Entity
     {
         if (IsLocalPlayer())
         {
-            ConnectionManager.Conn.Reducers.PlayerResetHealth(ownerIdentity);
+            SpacetimeManager.Conn.Reducers.PlayerResetHealth(ownerIdentity);
         }
     }
 

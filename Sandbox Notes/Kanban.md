@@ -13,18 +13,20 @@ kanban-plugin: board
 
 ## Next
 
-- [ ] Add gatherable items that can be picked up into the inventory (start with sticks so that can be used as a building material)
-- [ ] Add material requirements to building
+- [ ] Make gathering materials server authoritative
+- [ ] Make gathering nodes respawn
 
 
 ## In Progress
 
-- [ ] Create a character inventory system
 
 
 ## Done
 
 **Complete**
+- [x] Add material requirements to building
+- [x] Add gatherable items that can be picked up into the inventory (start with sticks so that can be used as a building material)
+- [x] Create a character inventory system
 
 
 ***

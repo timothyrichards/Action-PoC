@@ -29,6 +29,7 @@ public class ReducerMiddleware
     public void Initialize(RemoteReducers reducers)
     {
         _reducers = reducers;
+        Debug.Log("ReducerMiddleware initialized");
     }
 
     // Generic method to handle any reducer call
@@ -43,7 +44,7 @@ public class ReducerMiddleware
         // Check if parameters have changed since last call
         if (ShouldSkipCall(reducerName, parameters))
         {
-            Debug.Log($"Skipping {reducerName} call - parameters unchanged");
+            // Debug.Log($"Skipping {reducerName} call - parameters unchanged");
             return;
         }
 

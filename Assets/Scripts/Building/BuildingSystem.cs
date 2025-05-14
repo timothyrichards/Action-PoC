@@ -5,8 +5,6 @@ using SpacetimeDB.Types;
 
 public class BuildingSystem : MonoBehaviour
 {
-    public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
-    public enum AnchorMode { Auto, Manual }
     private static BuildingSystem _instance;
     public static BuildingSystem Instance
     {
@@ -39,7 +37,6 @@ public class BuildingSystem : MonoBehaviour
     [SerializeField] private Material invalidMaterial;
 
     private BuildingUI buildingUI;
-    private BuildingManager buildingManager;
     private BuildMode currentMode = BuildMode.None;
     private GameObject previewInstance;
     private BuildingPiece currentPrefab;
@@ -70,7 +67,6 @@ public class BuildingSystem : MonoBehaviour
     private void Start()
     {
         buildingUI = FindAnyObjectByType<BuildingUI>();
-        buildingManager = GetComponent<BuildingManager>();
         SetBuildMode(currentMode);
     }
 
@@ -396,7 +392,7 @@ public class BuildingSystem : MonoBehaviour
         // Sync the placed piece over the network
         if (currentPrefab.TryGetComponent(out BuildingPiece piece))
         {
-            buildingManager.BuildingPiecePlace(variantId, previewInstance);
+            BuildingSync.BuildingPiecePlace(variantId, previewInstance);
         }
     }
 
@@ -436,9 +432,9 @@ public class BuildingSystem : MonoBehaviour
             {
                 // Try to remove the piece through BuildingSync
                 BuildingPiece piece = target.GetComponentInParent<BuildingPiece>();
-                if (piece != null && buildingManager != null)
+                if (piece != null)
                 {
-                    buildingManager.BuildingPieceRemove(piece.PieceId);
+                    BuildingSync.BuildingPieceRemove(piece.PieceId);
                 }
 
                 highlightedObject = null;

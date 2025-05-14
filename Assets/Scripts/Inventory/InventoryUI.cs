@@ -4,21 +4,23 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine.InputSystem;
 using SpacetimeDB.Types;
+using SpacetimeDB;
 
 public class InventoryUI : MonoBehaviour
 {
     public static InventoryUI Instance { get; private set; }
+
     [Header("References")]
     public GameObject inventoryPanel;
     public Transform itemContainer;
     public Transform pickupPromptContainer;
+    public TextMeshProUGUI pickupKeybindText;
     public TextMeshProUGUI pickupPromptText;
     public GameObject itemPrefab;
     public KeyCode toggleKey = KeyCode.Tab;
     public InputActionReference inputActionReference;
 
     private List<GameObject> itemSlots = new();
-    private InventoryManager inventoryManager;
 
     private void Awake()
     {
@@ -29,19 +31,14 @@ public class InventoryUI : MonoBehaviour
         pickupPromptContainer.gameObject.SetActive(false);
     }
 
-    private void Start()
+    private void OnEnable()
     {
-        inventoryManager = InventoryManager.Instance;
-        if (inventoryManager != null)
-        {
-            inventoryManager.OnInventoryChanged += UpdateInventoryUI;
-        }
+        InventorySync.OnInventoryChanged += UpdateInventoryUI;
+    }
 
-        // Hide inventory at start
-        if (inventoryPanel != null)
-        {
-            inventoryPanel.SetActive(false);
-        }
+    private void OnDisable()
+    {
+        InventorySync.OnInventoryChanged -= UpdateInventoryUI;
     }
 
     private void Update()
@@ -61,12 +58,12 @@ public class InventoryUI : MonoBehaviour
 
             if (newState)
             {
-                UpdateInventoryUI(PlayerEntity.LocalPlayer.inventory);
+                UpdateInventoryUI(PlayerEntity.LocalPlayer.ownerIdentity, PlayerEntity.LocalPlayer.inventory);
             }
         }
     }
 
-    private void UpdateInventoryUI(List<ItemRef> items)
+    private void UpdateInventoryUI(Identity identity, List<ItemRef> items)
     {
         // Clear existing slots
         foreach (var slot in itemSlots)
@@ -75,26 +72,37 @@ public class InventoryUI : MonoBehaviour
         }
         itemSlots.Clear();
 
-        // Create new slots for each item
-        foreach (var item in items)
+        // Create slots for the entire inventory size
+        var inventory = InventorySync.GetInventory(PlayerEntity.LocalPlayer);
+        for (int i = 0; i < inventory.Size; i++)
         {
             GameObject slot = Instantiate(itemPrefab, itemContainer);
             itemSlots.Add(slot);
 
+            // Find matching item for this slot index
+            ItemRef matchingItem = i < items.Count ? items[i] : null;
+
             // Setup slot UI
             var slotUI = slot.GetComponent<ItemSlotUI>();
-            slotUI?.SetupSlot(item);
+            if (slotUI != null)
+            {
+                slotUI.SetupSlot(matchingItem);
+            }
 
-            // Add click handler
-            var button = slot.GetComponent<Button>();
-            button?.onClick.AddListener(() => SelectItem(item));
+            // Add click handler if there's an item
+            if (matchingItem != null)
+            {
+                var button = slot.GetComponent<Button>();
+                button?.onClick.AddListener(() => SelectItem(matchingItem));
+            }
         }
     }
 
     public void ShowPickupPrompt(string itemName)
     {
         pickupPromptContainer.gameObject.SetActive(true);
-        pickupPromptText.text = $"Press {inputActionReference.action.GetBindingDisplayString(0)} to pick up {itemName}";
+        pickupKeybindText.text = inputActionReference.action.GetBindingDisplayString(0);
+        pickupPromptText.text = itemName;
     }
 
     public void HidePickupPrompt()
@@ -105,13 +113,5 @@ public class InventoryUI : MonoBehaviour
     private void SelectItem(ItemRef item)
     {
         // TODO: Implement item selection UI
-    }
-
-    private void OnDestroy()
-    {
-        if (inventoryManager != null)
-        {
-            inventoryManager.OnInventoryChanged -= UpdateInventoryUI;
-        }
     }
 }

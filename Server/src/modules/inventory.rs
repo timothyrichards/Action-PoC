@@ -36,7 +36,6 @@ pub fn inventory_create(ctx: &ReducerContext) -> Result<(), String> {
 
 #[spacetimedb::reducer]
 pub fn inventory_add_item(ctx: &ReducerContext, item_id: u32, quantity: u32) -> Result<(), String> {
-    log::info!("inventory_add_item: {:?}", item_id);
     let inventory = ctx.db.inventory().identity().find(ctx.sender);
     if let Some(mut inventory) = inventory {
         if let Some(existing_item) = inventory.items.iter_mut().find(|item| item.id == item_id) {
@@ -51,6 +50,19 @@ pub fn inventory_add_item(ctx: &ReducerContext, item_id: u32, quantity: u32) -> 
         ctx.db.inventory().identity().update(inventory);
     }
     Ok(())
+}
+
+pub fn inventory_get_item(ctx: &ReducerContext, item_id: u32) -> Result<ItemRef, String> {
+    let inventory = ctx.db.inventory().identity().find(ctx.sender);
+    if let Some(inventory) = inventory {
+        if let Some(item) = inventory.items.iter().find(|item| item.id == item_id) {
+            Ok(item.clone())
+        } else {
+            Err("Item not found in inventory".to_string())
+        }
+    } else {
+        Err("Inventory not found".to_string())
+    }
 }
 
 #[spacetimedb::reducer]

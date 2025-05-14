@@ -130,7 +130,7 @@ public class ThirdPersonController : MonoBehaviour
         playerEntity.animController.UpdateCombatLayerWeight(IsMoving, IsGrounded);
 
         if (movingPlayer) return;
-        if (!ConnectionManager.IsConnected()) return;
+        if (!SpacetimeManager.IsConnected()) return;
         if (!playerEntity.IsLocalPlayer()) return;
 
         float cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
@@ -152,7 +152,7 @@ public class ThirdPersonController : MonoBehaviour
 
         ReducerMiddleware.Instance.CallReducer<object[]>(
             "PlayerUpdate",
-            _ => ConnectionManager.Conn.Reducers.PlayerUpdate(position, rotation, lookDirection, animState),
+            _ => SpacetimeManager.Conn.Reducers.PlayerUpdate(position, rotation, lookDirection, animState),
             position, rotation, lookDirection, animState
         );
     }

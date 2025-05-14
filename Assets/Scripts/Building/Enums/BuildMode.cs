@@ -1,0 +1,1 @@
+public enum BuildMode { None, Foundation, Floor, Wall, Stairs, Delete }
