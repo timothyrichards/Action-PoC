@@ -27,7 +27,7 @@ pub struct Inventory {
 pub fn inventory_create(ctx: &ReducerContext) -> Result<(), String> {
     let inventory = Inventory {
         identity: ctx.sender,
-        size: 36,
+        size: 32,
         items: vec![],
     };
     ctx.db.inventory().insert(inventory);

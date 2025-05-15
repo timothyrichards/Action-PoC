@@ -10,7 +10,6 @@ pub struct DbAnimationState {
     pub vertical_movement: f32,
     pub look_yaw: f32,
     pub is_moving: bool,
-    pub is_turning: bool,
     pub is_jumping: bool,
     pub is_attacking: bool,
     pub combo_count: u32,
@@ -63,7 +62,6 @@ pub fn player_create(ctx: &ReducerContext) -> Result<(), String> {
             vertical_movement: 0.0,
             look_yaw: 0.0,
             is_moving: false,
-            is_turning: false,
             is_jumping: false,
             is_attacking: false,
             combo_count: 0,
@@ -109,13 +107,11 @@ pub fn player_update(
     ctx: &ReducerContext,
     position: DbVector3,
     rotation: DbVector3,
-    look_direction: DbVector2,
     animation_state: DbAnimationState,
 ) -> Result<(), String> {
     if ctx.db.player().identity().find(ctx.sender).is_some() {
         player_set_position(ctx, position)?;
         player_set_rotation(ctx, rotation)?;
-        player_set_look_direction(ctx, look_direction)?;
         player_set_animation_state(ctx, animation_state)?;
         Ok(())
     } else {
@@ -138,20 +134,6 @@ pub fn player_set_position(ctx: &ReducerContext, position: DbVector3) -> Result<
 pub fn player_set_rotation(ctx: &ReducerContext, rotation: DbVector3) -> Result<(), String> {
     if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
         player.rotation = rotation;
-        ctx.db.player().identity().update(player);
-        Ok(())
-    } else {
-        Err("Player not found".to_string())
-    }
-}
-
-#[spacetimedb::reducer]
-pub fn player_set_look_direction(
-    ctx: &ReducerContext,
-    look_direction: DbVector2,
-) -> Result<(), String> {
-    if let Some(mut player) = ctx.db.player().identity().find(ctx.sender) {
-        player.look_direction = look_direction;
         ctx.db.player().identity().update(player);
         Ok(())
     } else {

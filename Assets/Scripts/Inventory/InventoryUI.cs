@@ -58,7 +58,12 @@ public class InventoryUI : MonoBehaviour
 
             if (newState)
             {
+                CursorManager.Instance.RequestCursorUnlock(this);
                 UpdateInventoryUI(PlayerEntity.LocalPlayer.ownerIdentity, PlayerEntity.LocalPlayer.inventory);
+            }
+            else
+            {
+                CursorManager.Instance.RequestCursorLock(this);
             }
         }
     }

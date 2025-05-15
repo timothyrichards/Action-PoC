@@ -42,11 +42,8 @@ public class PlayerEntity : Entity
     [Header("Interpolation Settings")]
     public Vector3 targetPosition;
     public Quaternion targetRotation;
-    public float targetCameraPitch;
-    public float targetYawDelta;
     public float positionSmoothTime = 0.15f;
     public float rotationLerpSpeed = 8f;
-    public float spineLerpSpeed = 8f;
 
     private QuantumConsole _quantumConsole;
     private readonly HashSet<object> disableInputRequests = new();
@@ -85,30 +82,6 @@ public class PlayerEntity : Entity
 
         // Smoothly interpolate rotation using Slerp
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationLerpSpeed * Time.deltaTime);
-
-        // Smoothly interpolate spine look values
-        float currentPitch = animController.cameraPitch;
-        float currentYaw = animController.yawDelta;
-
-        // Normalize angles before interpolation
-        if (Mathf.Abs(targetCameraPitch - currentPitch) > 180f)
-        {
-            if (targetCameraPitch > currentPitch)
-                currentPitch += 360f;
-            else
-                currentPitch -= 360f;
-        }
-
-        if (Mathf.Abs(targetYawDelta - currentYaw) > 180f)
-        {
-            if (targetYawDelta > currentYaw)
-                currentYaw += 360f;
-            else
-                currentYaw -= 360f;
-        }
-
-        animController.cameraPitch = Mathf.Lerp(currentPitch, targetCameraPitch, spineLerpSpeed * Time.deltaTime);
-        animController.yawDelta = Mathf.Lerp(currentYaw, targetYawDelta, spineLerpSpeed * Time.deltaTime);
     }
 
     public void Configure(Player playerData, CameraController playerCamera = null, HealthDisplay playerHealthDisplay = null)
@@ -139,14 +112,10 @@ public class PlayerEntity : Entity
             // Initialize target values for interpolation
             targetPosition = new Vector3(playerData.Position.X, playerData.Position.Y, playerData.Position.Z);
             targetRotation = Quaternion.Euler(playerData.Rotation.X, playerData.Rotation.Y, playerData.Rotation.Z);
-            targetCameraPitch = playerData.LookDirection.X;
-            targetYawDelta = playerData.LookDirection.Y;
 
             // Set initial transform values to match targets
             transform.position = targetPosition;
             transform.rotation = targetRotation;
-            animController.cameraPitch = targetCameraPitch;
-            animController.yawDelta = targetYawDelta;
         }
 
         // Update the health
@@ -175,13 +144,6 @@ public class PlayerEntity : Entity
                 ),
                 newData.AnimationState.IsMoving
             );
-
-            // Set turning animation values
-            animController.SetTurningState(newData.AnimationState.IsTurning, newData.AnimationState.LookYaw);
-
-            // Set target spine look values
-            targetCameraPitch = newData.LookDirection.X;
-            targetYawDelta = newData.LookDirection.Y;
 
             // Handle one-time triggers
             if (newData.AnimationState.IsJumping && !oldData.AnimationState.IsJumping)

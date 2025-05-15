@@ -12,6 +12,7 @@ public class ItemPickup : MonoBehaviour
     public uint quantity = 1;
 
     private PlayerInputActions inputActions;
+    private bool playerInRange = false;
 
     private void Awake()
     {
@@ -39,23 +40,26 @@ public class ItemPickup : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponent<PlayerEntity>() != null)
+        if (other.GetComponent<PlayerEntity>() == PlayerEntity.LocalPlayer)
         {
+            playerInRange = true;
             ShowPickupPrompt();
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.GetComponent<PlayerEntity>() != null)
+        if (other.GetComponent<PlayerEntity>() == PlayerEntity.LocalPlayer)
         {
+            playerInRange = false;
             HidePickupPrompt();
         }
     }
 
+    // TODO: consider reworking this, it runs on EVERY item in the game when the player hits the pickup key
     private void OnPickUp(InputAction.CallbackContext context)
     {
-        if (context.ReadValue<float>() > 0.5f)
+        if (context.ReadValue<float>() > 0.5f && playerInRange)
         {
             Debug.Log($"Picking up {itemName}");
             PickupItem();

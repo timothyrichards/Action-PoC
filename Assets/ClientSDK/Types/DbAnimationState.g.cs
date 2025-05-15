@@ -21,8 +21,6 @@ namespace SpacetimeDB.Types
         public float LookYaw;
         [DataMember(Name = "is_moving")]
         public bool IsMoving;
-        [DataMember(Name = "is_turning")]
-        public bool IsTurning;
         [DataMember(Name = "is_jumping")]
         public bool IsJumping;
         [DataMember(Name = "is_attacking")]
@@ -35,7 +33,6 @@ namespace SpacetimeDB.Types
             float VerticalMovement,
             float LookYaw,
             bool IsMoving,
-            bool IsTurning,
             bool IsJumping,
             bool IsAttacking,
             uint ComboCount
@@ -45,7 +42,6 @@ namespace SpacetimeDB.Types
             this.VerticalMovement = VerticalMovement;
             this.LookYaw = LookYaw;
             this.IsMoving = IsMoving;
-            this.IsTurning = IsTurning;
             this.IsJumping = IsJumping;
             this.IsAttacking = IsAttacking;
             this.ComboCount = ComboCount;

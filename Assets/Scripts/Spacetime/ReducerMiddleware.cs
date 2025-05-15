@@ -117,7 +117,6 @@ public class ReducerMiddleware
                    Math.Abs(animA.VerticalMovement - animB.VerticalMovement) < 0.0001f &&
                    Math.Abs(animA.LookYaw - animB.LookYaw) < 0.0001f &&
                    animA.IsMoving == animB.IsMoving &&
-                   animA.IsTurning == animB.IsTurning &&
                    animA.IsJumping == animB.IsJumping &&
                    animA.IsAttacking == animB.IsAttacking &&
                    animA.ComboCount == animB.ComboCount;

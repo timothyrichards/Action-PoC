@@ -19,17 +19,30 @@ public class ThirdPersonController : MonoBehaviour
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float acceleration = 10f;
     [SerializeField] private float deceleration = 8f;
+    [SerializeField]
+    private AnimationCurve accelerationCurve = new AnimationCurve(
+        new Keyframe(0f, 0f, 0f, 0.5f),    // Start slow
+        new Keyframe(0.3f, 0.15f, 0.8f, 0.8f),  // Initial push
+        new Keyframe(0.7f, 0.85f, 0.8f, 0.8f),  // Building momentum
+        new Keyframe(1f, 1f, 0.5f, 0f)     // Final push to top speed
+    );
+    [SerializeField]
+    private AnimationCurve decelerationCurve = new AnimationCurve(
+        new Keyframe(0f, 0f, 0f, 2f),      // Quick initial slowdown
+        new Keyframe(0.3f, 0.7f, 1f, 1f),  // Rapid deceleration
+        new Keyframe(0.7f, 0.9f, 0.5f, 0.5f),  // Starting to coast
+        new Keyframe(1f, 1f, 0.2f, 0f)     // Gentle stop
+    );
 
     private PlayerInputActions inputActions;
     private Vector2 moveInput;
-    private Vector2 lookInput;
     private Vector3 velocity;
     private Vector3 currentMovement;
-    private bool IsMoving => moveInput.sqrMagnitude > 0.01f;
-    private bool IsTurning => Mathf.Abs(CalculateYawDelta()) > playerEntity.animController.maxSpineYaw;
-    private bool IsGrounded => controller.isGrounded;
     private bool jumpQueued;
-    private DbAnimationState lastAnimationState;
+    private bool IsMoving => moveInput.sqrMagnitude > 0.01f;
+    public bool IsGrounded => controller.isGrounded;
+    private float currentLerpTime = 0f;
+    private bool wasMoving = false;
 
     private void Awake()
     {
@@ -45,7 +58,6 @@ public class ThirdPersonController : MonoBehaviour
         inputActions.Player.Jump.performed += OnJump;
         inputActions.Player.Attack.performed += OnAttack;
         inputActions.Player.Look.performed += OnLook;
-        inputActions.Player.Look.canceled += OnLookStop;
         inputActions.Enable();
     }
 
@@ -56,7 +68,6 @@ public class ThirdPersonController : MonoBehaviour
         inputActions.Player.Jump.performed -= OnJump;
         inputActions.Player.Attack.performed -= OnAttack;
         inputActions.Player.Look.performed -= OnLook;
-        inputActions.Player.Look.canceled -= OnLookStop;
         inputActions.Disable();
     }
 
@@ -95,19 +106,6 @@ public class ThirdPersonController : MonoBehaviour
             playerEntity.CameraFreeForm.enabled = Cursor.lockState == CursorLockMode.Locked;
 
         if (!playerEntity.InputEnabled) return;
-
-        lookInput = context.ReadValue<Vector2>();
-
-        if (playerEntity.CameraFreeForm == null) return;
-
-        float yawDelta = CalculateYawDelta();
-        playerEntity.animController.SetTurningState(IsTurning, yawDelta);
-    }
-
-    private void OnLookStop(InputAction.CallbackContext context)
-    {
-        lookInput = Vector2.zero;
-        playerEntity.animController.SetTurningState(false, 0f);
     }
 
     private void Update()
@@ -115,7 +113,6 @@ public class ThirdPersonController : MonoBehaviour
         if (!playerEntity.InputEnabled)
         {
             moveInput = Vector2.zero;
-            lookInput = Vector2.zero;
             currentMovement = Vector3.zero;
             playerEntity.animController.SetMovementAnimation(Vector2.zero, false);
             playerEntity.animController.UpdateCombatLayerWeight(false, IsGrounded);
@@ -138,13 +135,11 @@ public class ThirdPersonController : MonoBehaviour
 
         var position = new DbVector3(transform.position.x, transform.position.y, transform.position.z);
         var rotation = new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z);
-        var lookDirection = new DbVector2(cameraPitch, yawDelta);
         var animState = new DbAnimationState(
             moveInput.x,
             moveInput.y,
             yawDelta,
             IsMoving,
-            playerEntity.animController.IsTurning,
             playerEntity.animController.IsJumping,
             playerEntity.animController.IsAttacking,
             (uint)playerEntity.animController.ComboCount
@@ -152,19 +147,13 @@ public class ThirdPersonController : MonoBehaviour
 
         ReducerMiddleware.Instance.CallReducer<object[]>(
             "PlayerUpdate",
-            _ => SpacetimeManager.Conn.Reducers.PlayerUpdate(position, rotation, lookDirection, animState),
-            position, rotation, lookDirection, animState
+            _ => SpacetimeManager.Conn.Reducers.PlayerUpdate(position, rotation, animState),
+            position, rotation, animState
         );
     }
 
     private void LateUpdate()
     {
-        if (playerEntity.CameraFreeForm != null)
-        {
-            playerEntity.animController.cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
-            playerEntity.animController.yawDelta = CalculateYawDelta();
-        }
-
         // Apply gravity regardless of input state
         if (!IsGrounded)
         {
@@ -186,29 +175,16 @@ public class ThirdPersonController : MonoBehaviour
     {
         if (playerEntity.CameraFreeForm == null || Cursor.lockState != CursorLockMode.Locked) return;
 
-        // Always rotate to face the camera if moving
-        if (IsMoving || IsTurning)
+        // Smoothly rotate to face the camera direction with a slight lazy follow
+        if (IsMoving || !IsGrounded)
         {
-            float yawDelta = CalculateYawDelta();
-            float targetYaw = IsMoving
-                ? playerEntity.CameraFreeForm.transform.eulerAngles.y
-                : playerEntity.CameraFreeForm.transform.eulerAngles.y - Mathf.Sign(yawDelta) * playerEntity.animController.maxSpineYaw;
-
-            float rotationMultiplier = Mathf.Max(1f, Mathf.Abs(yawDelta - (IsMoving ? 0f : playerEntity.animController.maxSpineYaw)));
-            float newYaw = Mathf.MoveTowardsAngle(
-                transform.eulerAngles.y,
-                targetYaw,
-                rotationSpeed * Time.deltaTime * rotationMultiplier
+            float targetYaw = playerEntity.CameraFreeForm.transform.eulerAngles.y;
+            Quaternion targetRotation = Quaternion.Euler(0, targetYaw, 0);
+            transform.rotation = Quaternion.Lerp(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.deltaTime
             );
-
-            transform.rotation = Quaternion.Euler(0, newYaw, 0);
-        }
-
-        // Update spine look
-        if (playerEntity.CameraFreeForm != null)
-        {
-            playerEntity.animController.cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
-            playerEntity.animController.yawDelta = CalculateYawDelta();
         }
     }
 
@@ -224,8 +200,25 @@ public class ThirdPersonController : MonoBehaviour
             targetMovement *= moveSpeed;
         }
 
-        float accelerationToUse = targetMovement.magnitude > 0.01f ? acceleration : deceleration;
-        currentMovement = Vector3.Lerp(currentMovement, targetMovement, accelerationToUse * Time.deltaTime);
+        bool isMovingNow = targetMovement.magnitude > 0.01f;
+
+        // Reset lerp time when changing between moving and not moving
+        if (wasMoving != isMovingNow)
+        {
+            currentLerpTime = 0f;
+            wasMoving = isMovingNow;
+        }
+
+        // Increment the lerp time
+        currentLerpTime += Time.deltaTime * (isMovingNow ? acceleration : deceleration);
+        currentLerpTime = Mathf.Clamp01(currentLerpTime);
+
+        // Apply the appropriate curve
+        float lerpFactor = isMovingNow
+            ? accelerationCurve.Evaluate(currentLerpTime)
+            : decelerationCurve.Evaluate(currentLerpTime);
+
+        currentMovement = Vector3.Lerp(currentMovement, targetMovement, lerpFactor);
 
         if (jumpQueued)
         {

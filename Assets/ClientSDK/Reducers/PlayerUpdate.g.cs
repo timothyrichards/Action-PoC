@@ -12,12 +12,12 @@ namespace SpacetimeDB.Types
 {
     public sealed partial class RemoteReducers : RemoteBase
     {
-        public delegate void PlayerUpdateHandler(ReducerEventContext ctx, DbVector3 position, DbVector3 rotation, DbVector2 lookDirection, DbAnimationState animationState);
+        public delegate void PlayerUpdateHandler(ReducerEventContext ctx, DbVector3 position, DbVector3 rotation, DbAnimationState animationState);
         public event PlayerUpdateHandler? OnPlayerUpdate;
 
-        public void PlayerUpdate(DbVector3 position, DbVector3 rotation, DbVector2 lookDirection, DbAnimationState animationState)
+        public void PlayerUpdate(DbVector3 position, DbVector3 rotation, DbAnimationState animationState)
         {
-            conn.InternalCallReducer(new Reducer.PlayerUpdate(position, rotation, lookDirection, animationState), this.SetCallReducerFlags.PlayerUpdateFlags);
+            conn.InternalCallReducer(new Reducer.PlayerUpdate(position, rotation, animationState), this.SetCallReducerFlags.PlayerUpdateFlags);
         }
 
         public bool InvokePlayerUpdate(ReducerEventContext ctx, Reducer.PlayerUpdate args)
@@ -27,7 +27,6 @@ namespace SpacetimeDB.Types
                 ctx,
                 args.Position,
                 args.Rotation,
-                args.LookDirection,
                 args.AnimationState
             );
             return true;
@@ -44,21 +43,17 @@ namespace SpacetimeDB.Types
             public DbVector3 Position;
             [DataMember(Name = "rotation")]
             public DbVector3 Rotation;
-            [DataMember(Name = "look_direction")]
-            public DbVector2 LookDirection;
             [DataMember(Name = "animation_state")]
             public DbAnimationState AnimationState;
 
             public PlayerUpdate(
                 DbVector3 Position,
                 DbVector3 Rotation,
-                DbVector2 LookDirection,
                 DbAnimationState AnimationState
             )
             {
                 this.Position = Position;
                 this.Rotation = Rotation;
-                this.LookDirection = LookDirection;
                 this.AnimationState = AnimationState;
             }
 
@@ -66,7 +61,6 @@ namespace SpacetimeDB.Types
             {
                 this.Position = new();
                 this.Rotation = new();
-                this.LookDirection = new();
                 this.AnimationState = new();
             }
 

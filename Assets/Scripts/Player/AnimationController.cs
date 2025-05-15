@@ -2,22 +2,15 @@ using UnityEngine;
 
 public class AnimationController : MonoBehaviour
 {
-    [Header("Runtime")]
-    public float cameraPitch;
-    public float yawDelta;
-
     [Header("References")]
     [SerializeField] private Animator animator;
-    [SerializeField] private Transform spineBone;
-
-    [Header("Look Up/Down Settings")]
-    [SerializeField] private float spineRotationMultiplier = 1.0f;
-    [SerializeField] private float maxSpinePitch = 45f;
-    public float maxSpineYaw = 30f;
 
     [Header("Combat Settings")]
     [SerializeField] private float comboWindowTime = 1.0f;
     [SerializeField] private int maxComboCount = 3;
+
+    [Header("Movement Settings")]
+    [SerializeField] private float rotationSpeed = 10f;
 
     private int noMaskCombatLayerIndex;
     private int maskCombatLayerIndex;
@@ -30,12 +23,12 @@ public class AnimationController : MonoBehaviour
     private readonly int horizontalHash = Animator.StringToHash("Horizontal");
     private readonly int verticalHash = Animator.StringToHash("Vertical");
     private readonly int lookYawHash = Animator.StringToHash("LookYaw");
+    private readonly int comboCountHash = Animator.StringToHash("ComboCount");
     private readonly int isWalkingHash = Animator.StringToHash("Walking");
     private readonly int isTurningHash = Animator.StringToHash("Turning");
+    private readonly int isGroundedHash = Animator.StringToHash("Grounded");
     private readonly int jumpHash = Animator.StringToHash("Jump");
     private readonly int attackHash = Animator.StringToHash("Attack");
-    private readonly int comboCountHash = Animator.StringToHash("ComboCount");
-    // private readonly int resetComboHash = Animator.StringToHash("ResetCombo");
 
     public bool IsMoving => animator.GetBool(isWalkingHash);
     public bool IsTurning => animator.GetBool(isTurningHash);
@@ -50,35 +43,37 @@ public class AnimationController : MonoBehaviour
         maskCombatLayerIndex = animator.GetLayerIndex("Mask Combat Layer");
     }
 
-    private void LateUpdate()
+    private void Update()
     {
-        if (spineBone != null)
+        animator.SetBool(isGroundedHash, PlayerEntity.LocalPlayer.controller.IsGrounded);
+
+        // Check if combo window has expired
+        if (Time.time - lastAttackTime > comboWindowTime && currentCombo > 0)
         {
-            // Normalize angles to -180 to 180 range
-            float normalizedPitch = cameraPitch;
-            if (normalizedPitch > 180f) normalizedPitch -= 360f;
-            else if (normalizedPitch < -180f) normalizedPitch += 360f;
-
-            float normalizedYaw = yawDelta;
-            if (normalizedYaw > 180f) normalizedYaw -= 360f;
-            else if (normalizedYaw < -180f) normalizedYaw += 360f;
-
-            // Clamp to max values
-            float clampedPitch = Mathf.Clamp(normalizedPitch, -maxSpinePitch, maxSpinePitch);
-            float clampedYaw = Mathf.Clamp(normalizedYaw, -maxSpineYaw, maxSpineYaw);
-
-            Vector3 localEuler = spineBone.localEulerAngles;
-            localEuler.x = clampedPitch * spineRotationMultiplier;
-            localEuler.y = clampedYaw;
-            spineBone.localEulerAngles = localEuler;
+            ResetCombo();
         }
     }
 
     public void SetMovementAnimation(Vector2 movement, bool isWalking)
     {
-        animator.SetFloat(horizontalHash, movement.x, 0.05f, Time.deltaTime);
-        animator.SetFloat(verticalHash, movement.y, 0.05f, Time.deltaTime);
+        // Use faster interpolation time when landing to make the transition snappier
+        float interpolationTime = !animator.GetBool(isGroundedHash) ? 0.05f : 0.1f;
+
+        // Maintain movement values during landing for smoother transitions
+        animator.SetFloat(horizontalHash, movement.x, interpolationTime, Time.deltaTime);
+        animator.SetFloat(verticalHash, movement.y, interpolationTime, Time.deltaTime);
         animator.SetBool(isWalkingHash, isWalking);
+
+        // Rotate the model based on movement direction
+        if (movement.magnitude > 0.1f)
+        {
+            // Calculate the target rotation based on movement direction
+            float targetAngle = Mathf.Atan2(movement.x, movement.y) * Mathf.Rad2Deg;
+            Quaternion targetRotation = Quaternion.Euler(0, targetAngle, 0);
+
+            // Smoothly rotate towards the target rotation
+            animator.transform.localRotation = Quaternion.Lerp(animator.transform.localRotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
     }
 
     public void SetTurningState(bool isTurning, float yawDelta)
@@ -90,6 +85,7 @@ public class AnimationController : MonoBehaviour
     public void TriggerJump()
     {
         animator.SetTrigger(jumpHash);
+        animator.SetBool(isGroundedHash, false);
     }
 
     public void TriggerAttack()
@@ -128,7 +124,6 @@ public class AnimationController : MonoBehaviour
         currentCombo = 0;
         canContinueCombo = true;
         animator.SetInteger(comboCountHash, 0);
-        // animator.SetTrigger(resetComboHash);
     }
 
     public void UpdateCombatLayerWeight(bool isMoving, bool isGrounded)
@@ -143,14 +138,5 @@ public class AnimationController : MonoBehaviour
 
         animator.SetLayerWeight(noMaskCombatLayerIndex, newNoMaskWeight);
         animator.SetLayerWeight(maskCombatLayerIndex, newMaskWeight);
-    }
-
-    private void Update()
-    {
-        // Check if combo window has expired
-        if (Time.time - lastAttackTime > comboWindowTime && currentCombo > 0)
-        {
-            ResetCombo();
-        }
     }
 }
