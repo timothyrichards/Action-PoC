@@ -91,6 +91,7 @@ public class ThirdPersonController : MonoBehaviour
     private void OnAttack(InputAction.CallbackContext context)
     {
         if (!playerEntity.InputEnabled) return;
+        if (Cursor.lockState != CursorLockMode.Locked) return;
         if (BuildingSystem.Instance.IsEnabled) return;
 
         if (context.ReadValue<float>() > 0.5f)
