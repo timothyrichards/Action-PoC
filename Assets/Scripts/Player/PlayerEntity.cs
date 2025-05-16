@@ -142,7 +142,14 @@ public class PlayerEntity : Entity
                     newData.AnimationState.HorizontalMovement,
                     newData.AnimationState.VerticalMovement
                 ),
-                newData.AnimationState.IsMoving
+                newData.AnimationState.IsMoving,
+                newData.AnimationState.IsGrounded
+            );
+
+            // Set combat layer weight
+            animController.UpdateCombatLayerWeight(
+                newData.AnimationState.IsMoving,
+                newData.AnimationState.IsGrounded
             );
 
             // Handle one-time triggers

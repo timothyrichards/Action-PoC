@@ -17,34 +17,34 @@ namespace SpacetimeDB.Types
         public float HorizontalMovement;
         [DataMember(Name = "vertical_movement")]
         public float VerticalMovement;
-        [DataMember(Name = "look_yaw")]
-        public float LookYaw;
+        [DataMember(Name = "combo_count")]
+        public uint ComboCount;
         [DataMember(Name = "is_moving")]
         public bool IsMoving;
+        [DataMember(Name = "is_grounded")]
+        public bool IsGrounded;
         [DataMember(Name = "is_jumping")]
         public bool IsJumping;
         [DataMember(Name = "is_attacking")]
         public bool IsAttacking;
-        [DataMember(Name = "combo_count")]
-        public uint ComboCount;
 
         public DbAnimationState(
             float HorizontalMovement,
             float VerticalMovement,
-            float LookYaw,
+            uint ComboCount,
             bool IsMoving,
+            bool IsGrounded,
             bool IsJumping,
-            bool IsAttacking,
-            uint ComboCount
+            bool IsAttacking
         )
         {
             this.HorizontalMovement = HorizontalMovement;
             this.VerticalMovement = VerticalMovement;
-            this.LookYaw = LookYaw;
+            this.ComboCount = ComboCount;
             this.IsMoving = IsMoving;
+            this.IsGrounded = IsGrounded;
             this.IsJumping = IsJumping;
             this.IsAttacking = IsAttacking;
-            this.ComboCount = ComboCount;
         }
 
         public DbAnimationState()

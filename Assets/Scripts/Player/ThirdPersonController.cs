@@ -20,18 +20,18 @@ public class ThirdPersonController : MonoBehaviour
     [SerializeField] private float acceleration = 10f;
     [SerializeField] private float deceleration = 8f;
     [SerializeField]
-    private AnimationCurve accelerationCurve = new AnimationCurve(
-        new Keyframe(0f, 0f, 0f, 0.5f),    // Start slow
+    private AnimationCurve accelerationCurve = new(
+        new Keyframe(0f, 0f, 0f, 0.5f),         // Start slow
         new Keyframe(0.3f, 0.15f, 0.8f, 0.8f),  // Initial push
         new Keyframe(0.7f, 0.85f, 0.8f, 0.8f),  // Building momentum
-        new Keyframe(1f, 1f, 0.5f, 0f)     // Final push to top speed
+        new Keyframe(1f, 1f, 0.5f, 0f)          // Final push to top speed
     );
     [SerializeField]
-    private AnimationCurve decelerationCurve = new AnimationCurve(
-        new Keyframe(0f, 0f, 0f, 2f),      // Quick initial slowdown
-        new Keyframe(0.3f, 0.7f, 1f, 1f),  // Rapid deceleration
-        new Keyframe(0.7f, 0.9f, 0.5f, 0.5f),  // Starting to coast
-        new Keyframe(1f, 1f, 0.2f, 0f)     // Gentle stop
+    private AnimationCurve decelerationCurve = new(
+        new Keyframe(0f, 0f, 0f, 2f),           // Quick initial slowdown
+        new Keyframe(0.3f, 0.7f, 1f, 1f),       // Rapid deceleration
+        new Keyframe(0.7f, 0.9f, 0.5f, 0.5f),   // Starting to coast
+        new Keyframe(1f, 1f, 0.2f, 0f)          // Gentle stop
     );
 
     private PlayerInputActions inputActions;
@@ -105,8 +105,6 @@ public class ThirdPersonController : MonoBehaviour
         // Skip camera input if cursor is unlocked
         if (playerEntity.CameraFreeForm != null)
             playerEntity.CameraFreeForm.enabled = Cursor.lockState == CursorLockMode.Locked;
-
-        if (!playerEntity.InputEnabled) return;
     }
 
     private void Update()
@@ -115,7 +113,7 @@ public class ThirdPersonController : MonoBehaviour
         {
             moveInput = Vector2.zero;
             currentMovement = Vector3.zero;
-            playerEntity.animController.SetMovementAnimation(Vector2.zero, false);
+            playerEntity.animController.SetMovementAnimation(Vector2.zero, false, IsGrounded);
             playerEntity.animController.UpdateCombatLayerWeight(false, IsGrounded);
             controller.Move(new Vector3(0, velocity.y, 0) * Time.deltaTime);
             return;
@@ -124,26 +122,22 @@ public class ThirdPersonController : MonoBehaviour
         HandleLook();
         HandleMove();
 
-        playerEntity.animController.SetMovementAnimation(moveInput, IsMoving);
+        playerEntity.animController.SetMovementAnimation(moveInput, IsMoving, IsGrounded);
         playerEntity.animController.UpdateCombatLayerWeight(IsMoving, IsGrounded);
 
         if (movingPlayer) return;
-        if (!SpacetimeManager.IsConnected()) return;
-        if (!playerEntity.IsLocalPlayer()) return;
-
-        float cameraPitch = playerEntity.CameraFreeForm.transform.eulerAngles.x;
-        float yawDelta = CalculateYawDelta();
+        if (!SpacetimeManager.IsConnected() || !playerEntity.IsLocalPlayer()) return;
 
         var position = new DbVector3(transform.position.x, transform.position.y, transform.position.z);
         var rotation = new DbVector3(transform.eulerAngles.x, transform.eulerAngles.y, transform.eulerAngles.z);
         var animState = new DbAnimationState(
             moveInput.x,
             moveInput.y,
-            yawDelta,
+            (uint)playerEntity.animController.ComboCount,
             IsMoving,
+            IsGrounded,
             playerEntity.animController.IsJumping,
-            playerEntity.animController.IsAttacking,
-            (uint)playerEntity.animController.ComboCount
+            playerEntity.animController.IsAttacking
         );
 
         ReducerMiddleware.Instance.CallReducer<object[]>(

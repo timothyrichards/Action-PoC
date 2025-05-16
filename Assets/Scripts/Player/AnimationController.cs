@@ -3,6 +3,7 @@ using UnityEngine;
 public class AnimationController : MonoBehaviour
 {
     [Header("References")]
+    [SerializeField] private PlayerEntity playerEntity;
     [SerializeField] private Animator animator;
 
     [Header("Combat Settings")]
@@ -22,22 +23,20 @@ public class AnimationController : MonoBehaviour
     // Animation parameter hashes
     private readonly int horizontalHash = Animator.StringToHash("Horizontal");
     private readonly int verticalHash = Animator.StringToHash("Vertical");
-    private readonly int lookYawHash = Animator.StringToHash("LookYaw");
     private readonly int comboCountHash = Animator.StringToHash("ComboCount");
     private readonly int isWalkingHash = Animator.StringToHash("Walking");
-    private readonly int isTurningHash = Animator.StringToHash("Turning");
     private readonly int isGroundedHash = Animator.StringToHash("Grounded");
     private readonly int jumpHash = Animator.StringToHash("Jump");
     private readonly int attackHash = Animator.StringToHash("Attack");
 
     public bool IsMoving => animator.GetBool(isWalkingHash);
-    public bool IsTurning => animator.GetBool(isTurningHash);
     public bool IsJumping => animator.GetBool(jumpHash);
     public bool IsAttacking => animator.GetBool(attackHash);
     public int ComboCount => animator.GetInteger(comboCountHash);
 
     private void Awake()
     {
+        playerEntity = GetComponent<PlayerEntity>();
         animator = GetComponentInChildren<Animator>();
         noMaskCombatLayerIndex = animator.GetLayerIndex("No Mask Combat Layer");
         maskCombatLayerIndex = animator.GetLayerIndex("Mask Combat Layer");
@@ -45,7 +44,9 @@ public class AnimationController : MonoBehaviour
 
     private void Update()
     {
-        animator.SetBool(isGroundedHash, PlayerEntity.LocalPlayer.controller.IsGrounded);
+        if (playerEntity != PlayerEntity.LocalPlayer) return;
+
+        animator.SetBool(isGroundedHash, playerEntity.controller.IsGrounded);
 
         // Check if combo window has expired
         if (Time.time - lastAttackTime > comboWindowTime && currentCombo > 0)
@@ -54,15 +55,16 @@ public class AnimationController : MonoBehaviour
         }
     }
 
-    public void SetMovementAnimation(Vector2 movement, bool isWalking)
+    public void SetMovementAnimation(Vector2 movement, bool isWalking, bool isGrounded)
     {
-        // Use faster interpolation time when landing to make the transition snappier
-        float interpolationTime = !animator.GetBool(isGroundedHash) ? 0.05f : 0.1f;
-
         // Maintain movement values during landing for smoother transitions
+        animator.SetBool(isWalkingHash, isWalking);
+        animator.SetBool(isGroundedHash, isGrounded);
+
+        // Use faster interpolation time when landing to make the transition snappier
+        float interpolationTime = !isGrounded ? 0.05f : 0.1f;
         animator.SetFloat(horizontalHash, movement.x, interpolationTime, Time.deltaTime);
         animator.SetFloat(verticalHash, movement.y, interpolationTime, Time.deltaTime);
-        animator.SetBool(isWalkingHash, isWalking);
 
         // Rotate the model based on movement direction
         if (movement.magnitude > 0.1f)
@@ -74,12 +76,6 @@ public class AnimationController : MonoBehaviour
             // Smoothly rotate towards the target rotation
             animator.transform.localRotation = Quaternion.Lerp(animator.transform.localRotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
-    }
-
-    public void SetTurningState(bool isTurning, float yawDelta)
-    {
-        animator.SetBool(isTurningHash, isTurning);
-        animator.SetFloat(lookYawHash, yawDelta < 0 ? 0f : 1f);
     }
 
     public void TriggerJump()

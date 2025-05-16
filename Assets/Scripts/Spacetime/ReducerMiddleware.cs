@@ -19,7 +19,7 @@ public class ReducerMiddleware
     }
 
     // Dictionary to store the last parameters for each reducer call
-    private Dictionary<string, object[]> _lastParams = new Dictionary<string, object[]>();
+    private Dictionary<string, object[]> _lastParams = new();
 
     // Reference to the actual RemoteReducers instance
     private RemoteReducers _reducers;
@@ -115,7 +115,6 @@ public class ReducerMiddleware
         {
             return Math.Abs(animA.HorizontalMovement - animB.HorizontalMovement) < 0.0001f &&
                    Math.Abs(animA.VerticalMovement - animB.VerticalMovement) < 0.0001f &&
-                   Math.Abs(animA.LookYaw - animB.LookYaw) < 0.0001f &&
                    animA.IsMoving == animB.IsMoving &&
                    animA.IsJumping == animB.IsJumping &&
                    animA.IsAttacking == animB.IsAttacking &&

@@ -8,11 +8,11 @@ use spacetimedb::{Identity, ReducerContext, SpacetimeType, Table};
 pub struct DbAnimationState {
     pub horizontal_movement: f32,
     pub vertical_movement: f32,
-    pub look_yaw: f32,
+    pub combo_count: u32,
     pub is_moving: bool,
+    pub is_grounded: bool,
     pub is_jumping: bool,
     pub is_attacking: bool,
-    pub combo_count: u32,
 }
 
 #[spacetimedb::table(name = player, public)]
@@ -60,11 +60,11 @@ pub fn player_create(ctx: &ReducerContext) -> Result<(), String> {
         animation_state: DbAnimationState {
             horizontal_movement: 0.0,
             vertical_movement: 0.0,
-            look_yaw: 0.0,
+            combo_count: 0,
             is_moving: false,
+            is_grounded: false,
             is_jumping: false,
             is_attacking: false,
-            combo_count: 0,
         },
         health: 100.0,
         max_health: 100.0,
